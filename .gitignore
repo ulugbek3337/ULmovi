@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+uploads/
+storage/
+logs/
+.venv/
+__pycache__/
+
+backend/ulmovi.db
+*.db
+*.sqlite
+*.sqlite3
+public/phpcheck.php

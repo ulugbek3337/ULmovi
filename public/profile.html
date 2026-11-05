@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULmovi — Profil</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="auth-page">
+    <main class="auth-card">
+        <a href="index.html" class="logo">UL<span>movi</span></a>
+        <h1>Profil sozlamalari</h1>
+        <p id="profileMessage" class="auth-message" role="status" aria-live="polite"></p>
+        <form id="profileForm">
+            <div class="form-group"><label for="profileName">Ism</label><input id="profileName" name="name" maxlength="100" autocomplete="name" required></div>
+            <div class="form-group"><label for="profileEmail">Email</label><input id="profileEmail" name="email" type="email" autocomplete="email" required></div>
+            <div class="form-group"><label for="currentPassword">Joriy parol (tasdiqlash uchun)</label><input id="currentPassword" name="current_password" type="password" autocomplete="current-password" required></div>
+            <div class="form-group"><label for="newPassword">Yangi parol (ixtiyoriy, kamida 8 belgi)</label><input id="newPassword" name="new_password" type="password" minlength="8" maxlength="200" autocomplete="new-password"></div>
+            <button type="submit" class="submit-btn">Saqlash</button>
+        </form>
+        <p><a href="index.html">Bosh sahifaga qaytish</a> · <button type="button" class="nav-logout-btn" data-logout>Chiqish</button></p>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>

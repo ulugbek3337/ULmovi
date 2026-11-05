@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080a10">
+    <title>ULmovi — Kinolar olami</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo" aria-label="ULmovi bosh sahifa">UL<span>movi</span></a>
+            <nav id="mainNav" class="main-nav" aria-label="Asosiy navigatsiya"></nav>
+            <div class="search-box">
+                <label class="sr-only" for="searchInput">Kino qidirish</label>
+                <input type="search" id="searchInput" placeholder="Kino nomini qidiring..." autocomplete="off">
+            </div>
+            <div class="nav-right">
+                <div id="navUserArea" class="user-nav-area"></div>
+            </div>
+        </div>
+    </header>
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <p class="eyebrow">Kino olami — ULmovi</p>
+                <h1>Sevimli hikoyalaringizni <span>tomosha qiling</span></h1>
+                <p>Yangi filmlarni kashf eting, baho bering va taassurotlaringizni ulashing.</p>
+                <div class="hero-actions">
+                    <a class="hero-button" href="#latest">Kinolarni ko‘rish <span aria-hidden="true">↓</span></a>
+                    <button class="hero-auth-button" type="button" data-auth-open="login">Kirish</button>
+                    <button class="hero-auth-button secondary" type="button" data-auth-open="register">Ro‘yxatdan o‘tish</button>
+                </div>
+            </div>
+        </section>
+        <div class="main-content">
+            <section id="homeAds" class="ad-slot" aria-label="Reklama" hidden></section>
+            <section class="filters-bar" aria-label="Kino filtrlari">
+                <div>
+                    <label for="genreFilter">Janr</label>
+                    <select id="genreFilter">
+                        <option value="">Barcha janrlar</option>
+                        <option value="action">Jangari</option>
+                        <option value="comedy">Komediya</option>
+                        <option value="drama">Drama</option>
+                        <option value="thriller">Triller</option>
+                        <option value="animation">Animatsiya</option>
+                        <option value="documentary">Hujjatli</option>
+                        <option value="romance">Romantik</option>
+                        <option value="adventure">Sarguzasht</option>
+                        <option value="other">Boshqa</option>
+                    </select>
+                </div>
+                <p id="movieStatus" class="section-note" role="status" aria-live="polite"></p>
+            </section>
+            <section id="latest" class="movies-section">
+                <div class="section-heading"><div><p class="eyebrow">Hozirgina qo‘shildi</p><h2>So‘nggi kinolar</h2></div></div>
+                <div id="moviesGrid" class="movies-grid"></div>
+                <button id="loadMoreBtn" class="load-more-btn" type="button" hidden>Yana kinolarni ko‘rish</button>
+            </section>
+            <section id="betweenAds" class="ad-slot" aria-label="Reklama" hidden></section>
+            <section id="popular" class="movies-section">
+                <div class="section-heading"><div><p class="eyebrow">Ko‘p yoqtirilgan</p><h2>Ommabop kinolar</h2></div></div>
+                <div id="popularGrid" class="movies-grid"></div>
+            </section>
+            <section id="top-rated" class="movies-section">
+                <div class="section-heading"><div><p class="eyebrow">Tomoshabinlar tanlovi</p><h2>Yuqori baholangan</h2></div></div>
+                <div id="topRatedGrid" class="movies-grid"></div>
+            </section>
+            <section id="recommended" class="movies-section">
+                <div class="section-heading"><div><p class="eyebrow">Siz uchun</p><h2>Tavsiya etiladi</h2></div></div>
+                <div id="recommendedGrid" class="movies-grid"></div>
+            </section>
+        </div>
+    </main>
+
+    <div id="playerModal" class="player-overlay" role="dialog" aria-modal="true" aria-label="Video pleer">
+        <div class="player-box">
+            <div class="player-heading"><h2 id="playerTitle">Kino</h2><button id="closePlayerBtn" class="close-player" type="button" aria-label="Yopish">&times;</button></div>
+            <div id="videoContainer"></div>
+        </div>
+    </div>
+
+    <div id="movieDetailModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+        <article class="movie-detail-box">
+            <button id="closeDetailBtn" class="detail-close" type="button" aria-label="Yopish">&times;</button>
+            <div id="movieDetailContent"></div>
+        </article>
+    </div>
+    <div id="authModal" class="modal-overlay auth-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
+        <section class="auth-card auth-dialog">
+            <button id="closeAuthModal" class="detail-close" type="button" aria-label="Yopish">&times;</button>
+            <a href="index.html" class="logo">UL<span>movi</span></a>
+            <h2 id="authModalTitle">Hisobingizga kiring</h2>
+            <div class="auth-tabs" role="tablist" aria-label="Hisob amallari">
+                <button type="button" class="active" data-auth-tab="login">Kirish</button>
+                <button type="button" data-auth-tab="register">Ro‘yxatdan o‘tish</button>
+            </div>
+            <p id="authMessage" class="auth-message" role="status" aria-live="polite"></p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input id="loginEmail" name="email" type="email" maxlength="254" autocomplete="email" required>
+                </div>
+                <div class="form-group password-field">
+                    <label for="loginPassword">Parol</label>
+                    <input id="loginPassword" name="password" type="password" maxlength="200" autocomplete="current-password" required>
+                    <button type="button" class="password-toggle" data-toggle-password="loginPassword" aria-label="Parolni ko‘rsatish">Ko‘rsatish</button>
+                </div>
+                <button type="button" id="forgotPasswordBtn" class="text-button">Parolni unutdingizmi?</button>
+                <button type="submit" class="submit-btn">Kirish</button>
+            </form>
+            <form id="registerForm" hidden>
+                <div class="form-group">
+                    <label for="registerName">Ism</label>
+                    <input id="registerName" name="name" type="text" maxlength="100" autocomplete="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input id="registerEmail" name="email" type="email" maxlength="254" autocomplete="email" required>
+                </div>
+                <div class="form-group password-field">
+                    <label for="registerPassword">Parol (kamida 8 belgi)</label>
+                    <input id="registerPassword" name="password" type="password" minlength="8" maxlength="200" autocomplete="new-password" required>
+                    <button type="button" class="password-toggle" data-toggle-password="registerPassword" aria-label="Parolni ko‘rsatish">Ko‘rsatish</button>
+                </div>
+                <button type="submit" class="submit-btn">Hisob yaratish</button>
+            </form>
+            <section id="forgotPasswordPanel" class="forgot-password-panel" hidden>
+                <h3>Parolni tiklash</h3>
+                <form id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label for="forgotPasswordEmail">Hisobingizdagi email</label>
+                        <input id="forgotPasswordEmail" name="email" type="email" maxlength="254" autocomplete="email" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Tiklash havolasini yuborish</button>
+                </form>
+                <button type="button" class="secondary-btn" data-auth-tab="login">Kirishga qaytish</button>
+            </section>
+        </section>
+    </div>
+    <div id="noticeToast" class="notice-toast" role="status" aria-live="polite" hidden>
+        <span id="noticeToastMessage"></span>
+        <button id="noticeToastLogin" type="button" hidden>Kirish</button>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

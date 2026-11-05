@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULmovi — Boshqaruv</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <a href="index.html" class="logo">UL<span>movi</span></a>
+            <nav aria-label="Admin menyu">
+                <ul class="admin-nav">
+                    <li><a href="#dashboardTab" class="tab-link active" data-target="dashboardTab">Umumiy</a></li>
+                    <li><a href="#moviesTab" class="tab-link" data-target="moviesTab">Kinolar</a></li>
+                    <li><a href="#usersTab" class="tab-link" data-target="usersTab">Foydalanuvchilar</a></li>
+                    <li class="super-admin-only" hidden><a href="#rolesTab" class="tab-link" data-target="rolesTab">Rollar boshqaruvi</a></li>
+                    <li class="super-admin-only" hidden><a href="#adminsTab" class="tab-link" data-target="adminsTab">Administratorlar</a></li>
+                    <li><a href="#commentsTab" class="tab-link" data-target="commentsTab">Izohlar</a></li>
+                    <li><a href="#adsTab" class="tab-link" data-target="adsTab">Reklamalar</a></li>
+                    <li class="super-admin-only" hidden><a href="#settingsTab" class="tab-link" data-target="settingsTab">Tizim sozlamalari</a></li>
+                    <li class="super-admin-only" hidden><a href="#logsTab" class="tab-link" data-target="logsTab">Faollik jurnali</a></li>
+                    <li><a href="index.html">Saytga qaytish</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="admin-main">
+            <header class="admin-header">
+                <div><p class="eyebrow">ULmovi boshqaruvi</p><h1>Admin panel</h1></div>
+                <div class="user-profile-menu">
+                    <span id="adminNameDisplay">Admin</span>
+                    <strong id="adminRoleDisplay">Admin</strong>
+                    <a href="profile.html">Profil</a>
+                    <button type="button" data-logout class="secondary-btn">Chiqish</button>
+                </div>
+            </header>
+            <p id="adminStatus" class="form-message" role="status" aria-live="polite"></p>
+
+            <section id="dashboardTab" class="tab-content active">
+                <div class="stat-cards">
+                    <div class="stat-card"><h2>Kinolar</h2><div class="value" id="statMoviesCount">0</div></div>
+                    <div class="stat-card"><h2>Foydalanuvchilar</h2><div class="value" id="statUsersCount">0</div></div>
+                    <div class="stat-card super-admin-only" hidden><h2>Adminlar</h2><div class="value" id="statAdminsCount">0</div></div>
+                    <div class="stat-card super-admin-only" hidden><h2>Super Adminlar</h2><div class="value" id="statSuperAdminsCount">0</div></div>
+                    <div class="stat-card super-admin-only" hidden><h2>To‘xtatilgan hisoblar</h2><div class="value" id="statSuspendedUsersCount">0</div></div>
+                    <div class="stat-card"><h2>Izohlar</h2><div class="value" id="statCommentsCount">0</div></div>
+                    <div class="stat-card"><h2>Yoqtirishlar</h2><div class="value" id="statLikesCount">0</div></div>
+                    <div class="stat-card super-admin-only" hidden><h2>Yuklab olishlar</h2><div class="value" id="statDownloadsCount">0</div></div>
+                    <div class="stat-card super-admin-only" hidden><h2>Ko‘rishlar</h2><div class="value" id="statViewsCount">0</div></div>
+                    <div class="stat-card super-admin-only" hidden><h2>Reytinglar</h2><div class="value" id="statRatingsCount">0</div></div>
+                    <div class="stat-card super-admin-only" hidden><h2>O‘rtacha baho</h2><div class="value" id="statAverageRating">0</div></div>
+                </div>
+            </section>
+
+            <section id="moviesTab" class="tab-content">
+                <div class="admin-subheader"><div><p class="eyebrow">Katalog</p><h2>Kinolarni boshqarish</h2></div><button id="openMovieModalBtn" class="submit-btn" type="button">+ Kino qo‘shish</button></div>
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>ID</th><th>Nomi</th><th>Janr</th><th>Yil</th><th>Sifatlar</th><th>Amallar</th></tr></thead>
+                        <tbody id="adminMoviesTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="usersTab" class="tab-content">
+                <p class="eyebrow">Hisoblar</p><h2>Oddiy foydalanuvchilar</h2>
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>ID</th><th>Foydalanuvchi nomi</th><th>To‘liq ism</th><th>Email</th><th>Rol</th><th>Holat</th><th>Ro‘yxatdan o‘tgan</th><th>Oxirgi kirish</th><th>Amallar</th></tr></thead>
+                        <tbody id="adminUsersTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="rolesTab" class="tab-content super-admin-only" hidden>
+                <p class="eyebrow">Super Admin</p><h2>Foydalanuvchi rollarini boshqarish</h2>
+                <p>Rol yoki hisob holatini o‘zgartirishdan oldin amalni tasdiqlang. Oxirgi faol Super Adminni lavozimidan olib bo‘lmaydi.</p>
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>ID</th><th>Foydalanuvchi nomi</th><th>To‘liq ism</th><th>Email</th><th>Joriy rol</th><th>Holat</th><th>Ro‘yxatdan o‘tgan</th><th>Oxirgi kirish</th><th>Amallar</th></tr></thead>
+                        <tbody id="adminRolesTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="adminsTab" class="tab-content super-admin-only" hidden>
+                <p class="eyebrow">Super Admin</p><h2>Administrator hisoblari</h2>
+                <form id="adminCreateForm" class="admin-panel ad-form">
+                    <div class="form-group"><label for="newAdminName">Administrator ismi</label><input id="newAdminName" name="name" maxlength="100" required></div>
+                    <div class="form-group"><label for="newAdminEmail">Email</label><input id="newAdminEmail" name="email" type="email" required></div>
+                    <div class="form-group"><label for="newAdminPassword">Kuchli parol (kamida 12 belgi)</label><input id="newAdminPassword" name="password" type="password" minlength="12" maxlength="200" required></div>
+                    <button class="submit-btn" type="submit">Admin hisobini yaratish</button>
+                    <p id="adminCreateMessage" class="form-message" role="status"></p>
+                </form>
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>ID</th><th>Foydalanuvchi nomi</th><th>To‘liq ism</th><th>Email</th><th>Rol</th><th>Holat</th><th>Ro‘yxatdan o‘tgan</th><th>Oxirgi kirish</th><th>Yangi parol</th><th>Amallar</th></tr></thead>
+                        <tbody id="adminAdminsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="commentsTab" class="tab-content">
+                <p class="eyebrow">Hamjamiyat</p><h2>Izohlar moderatsiyasi</h2>
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Kino</th><th>Muallif</th><th>Izoh</th><th>Holat</th><th>Amal</th></tr></thead>
+                        <tbody id="adminCommentsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="adsTab" class="tab-content">
+                <p class="eyebrow">Hamkorlik</p><h2>Reklamalar</h2>
+                <form id="adForm" class="admin-panel ad-form">
+                    <div class="form-group"><label for="adTitle">Nomi</label><input id="adTitle" name="title" maxlength="200" required></div>
+                    <div class="form-group"><label for="adImage">Rasm manzili (HTTPS)</label><input id="adImage" name="image_url" type="url" placeholder="https://..."></div>
+                    <div class="form-group"><label for="adImageFile">Yoki banner yuklang (JPG, PNG, WebP; 10 MB)</label><input id="adImageFile" name="image" type="file" accept="image/jpeg,image/png,image/webp"></div>
+                    <div class="form-group"><label for="adDestination">O‘tish manzili</label><input id="adDestination" name="destination_url" type="url" required></div>
+                    <div class="form-group"><label for="adPlacement">Joylashuv</label><select id="adPlacement" name="placement"><option value="home">Bosh sahifa</option><option value="between_sections">Bo‘limlar orasida</option><option value="movie_detail">Kino sahifasi</option></select></div>
+                    <button class="submit-btn" type="submit">Reklama qo‘shish</button>
+                    <p id="adFormMessage" class="form-message" role="status"></p>
+                </form>
+                <div id="adsList" class="ads-list"></div>
+            </section>
+
+            <section id="settingsTab" class="tab-content super-admin-only" hidden>
+                <p class="eyebrow">Faqat Super Admin</p><h2>Global tizim sozlamalari</h2>
+                <form id="settingsForm" class="admin-panel ad-form">
+                    <div class="form-group"><label for="allowRegistration">Yangi foydalanuvchilar ro‘yxatdan o‘tishi</label><select id="allowRegistration" name="allow_registration"><option value="1">Yoqilgan</option><option value="0">O‘chirilgan</option></select></div>
+                    <div class="form-group"><label for="maintenanceMode">Texnik xizmat rejimi</label><select id="maintenanceMode" name="maintenance_mode"><option value="0">O‘chirilgan</option><option value="1">Yoqilgan</option></select></div>
+                    <div class="form-group"><label for="ffmpegEnabled">Video sifatlarini FFmpeg orqali yaratish</label><select id="ffmpegEnabled" name="ffmpeg_enabled"><option value="1">Yoqilgan</option><option value="0">O‘chirilgan</option></select></div>
+                    <div class="form-group"><label for="ffmpegPath">FFmpeg dasturi yo‘li (ixtiyoriy)</label><input id="ffmpegPath" name="ffmpeg_path" maxlength="500" autocomplete="off"></div>
+                    <div class="form-group"><label for="ffprobePath">FFprobe dasturi yo‘li (ixtiyoriy)</label><input id="ffprobePath" name="ffprobe_path" maxlength="500" autocomplete="off"></div>
+                    <div class="form-group"><label for="loginAttemptLimit">Kirish urinishlari limiti (1–100)</label><input id="loginAttemptLimit" name="login_attempt_limit" type="number" min="1" max="100" required></div>
+                    <div class="form-group"><label for="loginWindowMinutes">Limit amal qilish vaqti, daqiqa (1–1440)</label><input id="loginWindowMinutes" name="login_window_minutes" type="number" min="1" max="1440" required></div>
+                    <button class="submit-btn" type="submit">Sozlamalarni saqlash</button>
+                    <p id="settingsMessage" class="form-message" role="status" aria-live="polite"></p>
+                </form>
+            </section>
+
+            <section id="logsTab" class="tab-content super-admin-only" hidden>
+                <p class="eyebrow">Faqat Super Admin</p><h2>Ma’muriy faollik jurnali</h2>
+                <div class="table-wrap">
+                    <table class="admin-table">
+                        <thead><tr><th>Sana</th><th>Foydalanuvchi</th><th>Rol</th><th>Amal</th><th>Tafsilot</th></tr></thead>
+                        <tbody id="adminLogsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="movieModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="movieModalTitle">
+        <form id="movieForm" class="modal-box">
+            <h2 id="movieModalTitle">Kino qo‘shish</h2>
+            <div class="form-group"><label for="movieTitle">Kino nomi</label><input type="text" id="movieTitle" name="title" maxlength="200" required></div>
+            <div class="form-group"><label for="movieGenre">Janr</label>
+                <select id="movieGenre" name="genre">
+                    <option value="action">Jangari</option><option value="comedy">Komediya</option><option value="drama">Drama</option>
+                    <option value="thriller">Triller</option><option value="animation">Animatsiya</option><option value="documentary">Hujjatli</option>
+                    <option value="romance">Romantik</option><option value="adventure">Sarguzasht</option><option value="other">Boshqa</option>
+                </select>
+            </div>
+            <div class="form-group"><label for="movieYear">Yil</label><input type="number" id="movieYear" name="year" min="1888" max="2100" required></div>
+            <div class="form-group"><label for="movieDescription">Tavsif</label><textarea id="movieDescription" name="description" maxlength="5000" rows="4"></textarea></div>
+            <div class="form-group"><label for="moviePoster">Poster (JPG, PNG yoki WebP, 10 MB gacha)</label><input type="file" id="moviePoster" name="poster" accept="image/jpeg,image/png,image/webp"></div>
+            <div class="form-group"><label for="movieVideo">Video (MP4 yoki WebM, 6 GB gacha; 8 MB qismlarda yuboriladi)</label><input type="file" id="movieVideo" name="video" accept="video/mp4,video/webm" required></div>
+            <progress id="uploadProgress" max="100" value="0" hidden></progress>
+            <p id="uploadStatus" class="upload-status" role="status" aria-live="polite"></p>
+            <div class="upload-controls">
+                <button type="button" id="pauseMovieUpload" class="cancel-btn" hidden>To‘xtatib turish</button>
+                <button type="button" id="resumeMovieUpload" class="submit-btn" hidden>Davom ettirish</button>
+                <button type="button" id="cancelMovieUpload" class="cancel-btn" hidden>Yuklashni bekor qilish</button>
+            </div>
+            <p id="movieFormMessage" class="form-message" role="alert"></p>
+            <div class="modal-actions"><button type="button" id="closeModalBtn" class="cancel-btn">Bekor qilish</button><button type="submit" id="saveMovieBtn" class="submit-btn">Yuklash</button></div>
+        </form>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
