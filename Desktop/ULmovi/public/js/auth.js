@@ -1,0 +1,1 @@
+console.log('ULmovi Auth initialized');

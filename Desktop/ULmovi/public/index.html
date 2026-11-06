@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULmovi — Milliy va Jahon Kinolari</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">UL<span>movi</span></a>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Kino nomi yoki janr bo'yicha qidirish...">
+            </div>
+            <div class="nav-right">
+                <a href="admin.html" id="adminLinkBtn" class="admin-btn" style="display: none;">👑 Admin Panel</a>
+                <div id="navUserArea" class="user-nav-area"></div>
+            </div>
+        </div>
+    </header>
+    <main class="main-content">
+        <section class="filters-bar">
+            <div class="filter-group">
+                <select id="genreFilter">
+                    <option value="all">Barcha Janrlar</option>
+                    <option value="action">Jangari</option>
+                    <option value="comedy">Komediya</option>
+                    <option value="drama">Drama</option>
+                </select>
+            </div>
+        </section>
+        <section class="movies-section">
+            <h2 style="margin-bottom: 20px;">So'nggi Kinolar</h2>
+            <div id="moviesGrid" class="movies-grid"></div>
+        </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

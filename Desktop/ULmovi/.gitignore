@@ -1,0 +1,5 @@
+/backend/ulmovi.db
+/backend/ulmovi.db-journal
+/backend/ulmovi.db-shm
+/backend/ulmovi.db-wal
+/vendor/

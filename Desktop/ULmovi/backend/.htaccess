@@ -1,0 +1,9 @@
+Options -Indexes
+
+<FilesMatch "^ulmovi\.db(-journal|-wal|-shm)?$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^(bootstrap\.php|setup_admin\.php)$">
+    Require all denied
+</FilesMatch>
