@@ -1,6 +1,6 @@
 Options -Indexes
 
-<FilesMatch "^ulmovi\.db(-journal|-wal|-shm)?$">
+<FilesMatch "(?i)\.db$">
     Require all denied
 </FilesMatch>
 
