@@ -11,6 +11,9 @@ session_set_cookie_params([
     'samesite' => 'Lax',
     'path' => '/',
 ]);
+if ($isHttps) {
+    header('Strict-Transport-Security: max-age=31536000');
+}
 session_start();
 
 function respond(array $payload, int $status = 200): void
