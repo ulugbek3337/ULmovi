@@ -347,7 +347,8 @@ function probe_video_metadata(PDO $pdo, string $path): array
 function generate_video_variants(PDO $pdo, int $movieId, PDOStatement $fileStatement, string $sourcePath, array $metadata): bool
 {
     if (system_setting($pdo, 'ffmpeg_enabled', '1') !== '1') {
-        return true;
+        error_log('ULmovi video variants were not generated because FFmpeg is disabled in system settings.');
+        return false;
     }
     if (!function_exists('proc_open')) {
         error_log('ULmovi FFmpeg is unavailable because proc_open is disabled.');
