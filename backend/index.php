@@ -766,7 +766,20 @@ function store_movie_upload(PDO $pdo, int $movieId, array $upload): void
     $fileStatement->execute([$movieId, $quality, $stored['path'], $stored['mime'], $stored['size']]);
     $statement = $pdo->prepare('UPDATE movies SET video_path = ?, video_mime = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
     $statement->execute([$stored['path'], $stored['mime'], $movieId]);
-    generate_video_variants($pdo, $movieId, $fileStatement, $stored['absolute_path'], $metadata);
+    $jobStatement = $pdo->prepare(
+        'INSERT INTO video_processing_jobs(movie_id, source_path, metadata_json, status, created_at, updated_at)
+         VALUES (?, ?, ?, "pending", ?, ?)
+         ON CONFLICT(movie_id) DO UPDATE SET source_path = excluded.source_path,
+            metadata_json = excluded.metadata_json, status = "pending", attempts = 0,
+            last_error = NULL, updated_at = excluded.updated_at'
+    );
+    $jobStatement->execute([
+        $movieId,
+        $stored['path'],
+        json_encode($metadata, JSON_THROW_ON_ERROR),
+        time(),
+        time(),
+    ]);
 }
 
 function process_video_jobs(PDO $pdo, int $limit = 1): int
