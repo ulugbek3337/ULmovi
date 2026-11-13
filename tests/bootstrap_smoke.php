@@ -13,20 +13,25 @@ require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPA
 try {
     $pdo = database();
     $version = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($version !== 6) {
-        throw new RuntimeException('Expected schema version 6, got ' . $version);
+    if ($version !== 7) {
+        throw new RuntimeException('Expected schema version 7, got ' . $version);
     }
     $table = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'registration_attempts'")->fetchColumn();
     if ($table !== 'registration_attempts') {
         throw new RuntimeException('Registration rate-limit table was not created.');
     }
 
-    // Verify an existing v5 database can be upgraded idempotently to v6.
-    $pdo->exec('PRAGMA user_version = 5');
+    $jobsTable = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'video_processing_jobs'")->fetchColumn();
+    if ($jobsTable !== 'video_processing_jobs') {
+        throw new RuntimeException('Video processing job queue table was not created.');
+    }
+
+    // Verify an existing v6 database can be upgraded idempotently to v7.
+    $pdo->exec('PRAGMA user_version = 6');
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($upgradedVersion !== 6) {
-        throw new RuntimeException('Existing v5 database did not upgrade to v6.');
+    if ($upgradedVersion !== 7) {
+        throw new RuntimeException('Existing v6 database did not upgrade to v7.');
     }
 
     fwrite(STDOUT, "ULmovi SQLite migration smoke test passed.\n");
