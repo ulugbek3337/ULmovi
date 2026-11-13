@@ -176,3 +176,8 @@ Tunnel bergan vaqtinchalik HTTPS manzilini oching. Avval kichik video bilan sina
 - Video tekshiruvi xatosi: FFprobe to‘liq yo‘li va PHP/Apache foydalanuvchisining executable’ni ishga tushira olishini tekshiring. Ichki yo‘llar foydalanuvchiga ko‘rsatilmaydi; texnik tafsilotlar private logda qoladi.
 - FFmpeg variantlari yo‘q: `ULMOVI_FFMPEG` yo‘li, codec imkoniyatlari va private FFmpeg logini tekshiring. Asl video mavjud sifat sifatida saqlanadi.
 - Video oqimi/seek ishlamasa: Apache/PHP Range so‘rovlarini uzatishi, session cookie va fayl ruxsatlarini tekshiring.
+
+
+### Alwaysdata HTTPS xavfsizlik sozlamasi
+
+Sayt HTTPS orqali ishlayotgan production serverda `ULMOVI_FORCE_SECURE_COOKIES=1` muhit o‘zgaruvchisini sozlang. Bu reverse-proxy ortida PHP `HTTPS` qiymatini ko‘rmasa ham sessiya cookie’lariga `Secure` atributini majburiy qo‘llaydi. O‘zgaruvchini faqat HTTPS to‘liq yoqilgan production domenida ishlating.
