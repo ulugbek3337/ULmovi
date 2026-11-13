@@ -25,6 +25,17 @@ try {
     if ($jobsTable !== 'video_processing_jobs') {
         throw new RuntimeException('Video processing job queue table was not created.');
     }
+    $pdo->exec("INSERT INTO movies(title) VALUES ('CI queue smoke test')");
+    $movieId = (int)$pdo->lastInsertId();
+    $job = $pdo->prepare(
+        'INSERT INTO video_processing_jobs(movie_id, source_path, metadata_json, status, created_at, updated_at)
+         VALUES (?, ?, ?, "pending", ?, ?)'
+    );
+    $job->execute([$movieId, 'videos/test.mp4', '{"height":1080}', time(), time()]);
+    $jobStatus = $pdo->query('SELECT status FROM video_processing_jobs WHERE movie_id = ' . $movieId)->fetchColumn();
+    if ($jobStatus !== 'pending') {
+        throw new RuntimeException('Video processing job could not be queued.');
+    }
 
     // Verify an existing v6 database can be upgraded idempotently to v7.
     $pdo->exec('PRAGMA user_version = 6');
