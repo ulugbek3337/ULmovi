@@ -23,6 +23,7 @@ async function fetchAPI(action, method = 'GET', data = null, onProgress = null, 
     const url = new URL(API_URL);
     url.searchParams.set('action', action);
     const options = { method: requestMethod, credentials: 'same-origin' };
+    if (signal) options.signal = signal;
 
     if (requestMethod === 'GET' && data) {
         Object.entries(data).forEach(([key, value]) => {
