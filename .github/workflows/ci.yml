@@ -1,0 +1,40 @@
+name: ULmovi checks
+
+on:
+  push:
+    branches:
+      - main
+      - security-audit-fixes-2026-11
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  syntax-and-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, mbstring
+          coverage: none
+
+      - name: Check PHP syntax
+        run: find backend tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Test fresh and upgraded SQLite schema
+        run: php tests/bootstrap_smoke.php
+
+      - name: Check JavaScript syntax
+        run: |
+          for file in public/js/*.js; do
+            node --check "$file"
+          done
+
+      - name: Validate Composer manifest
+        run: php -r '$data=json_decode(file_get_contents("composer.json"), true, 512, JSON_THROW_ON_ERROR); if (!isset($data["require"]["phpmailer/phpmailer"])) { exit(1); }'

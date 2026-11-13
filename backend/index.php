@@ -344,24 +344,27 @@ function probe_video_metadata(PDO $pdo, string $path): array
     ];
 }
 
-function generate_video_variants(PDO $pdo, int $movieId, PDOStatement $fileStatement, string $sourcePath, array $metadata): void
+function generate_video_variants(PDO $pdo, int $movieId, PDOStatement $fileStatement, string $sourcePath, array $metadata): bool
 {
     if (system_setting($pdo, 'ffmpeg_enabled', '1') !== '1') {
-        return;
+        error_log('ULmovi video variants were not generated because FFmpeg is disabled in system settings.');
+        return false;
     }
     if (!function_exists('proc_open')) {
         error_log('ULmovi FFmpeg is unavailable because proc_open is disabled.');
-        return;
+        return false;
     }
     $ffmpeg = configured_ffmpeg($pdo);
     $sourceHeight = (int)$metadata['height'];
     $qualities = ['360p' => 360, '480p' => 480, '720p' => 720, '1080p' => 1080];
     $conversionDeadline = microtime(true) + 210;
+    $allSucceeded = true;
     foreach ($qualities as $label => $height) {
         if ($height >= $sourceHeight) continue;
         $remainingSeconds = (int)floor($conversionDeadline - microtime(true));
         if ($remainingSeconds < 1) {
-            error_log('ULmovi FFmpeg variants skipped after reaching the request processing budget.');
+            error_log('ULmovi FFmpeg variants skipped after reaching the worker processing budget.');
+            $allSucceeded = false;
             break;
         }
         $variantName = bin2hex(random_bytes(24)) . '.mp4';
@@ -383,11 +386,13 @@ function generate_video_variants(PDO $pdo, int $movieId, PDOStatement $fileState
             error_log('ULmovi FFmpeg variant failed; quality=' . $label . '; timeout='
                 . ($result['timed_out'] ? 'yes' : 'no') . '; log=' . $logPath);
             @unlink($variantPath);
+            $allSucceeded = false;
             continue;
         }
         @unlink($logPath);
         $fileStatement->execute([$movieId, $label, $variantRelative, 'video/mp4', (int)filesize($variantPath)]);
     }
+    return $allSucceeded;
 }
 
 const MAX_VIDEO_UPLOAD_BYTES = 6442450944;
@@ -713,12 +718,22 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
         if ($posterPath !== null) {
             $pdo->prepare('UPDATE movies SET poster_path = ? WHERE id = ?')->execute([$posterPath, $movieId]);
         }
-        generate_video_variants($pdo, $movieId, $fileStatement, $videoPath, $metadata);
+        $jobStatement = $pdo->prepare(
+            'INSERT INTO video_processing_jobs(movie_id, source_path, metadata_json, status, created_at, updated_at)
+             VALUES (?, ?, ?, "pending", ?, ?)'
+        );
+        $jobStatement->execute([
+            $movieId,
+            $relativeVideoPath,
+            json_encode($metadata, JSON_THROW_ON_ERROR),
+            time(),
+            time(),
+        ]);
         record_activity($pdo, (int)$admin['id'], 'movie_added', (string)$movieId);
         $pdo->prepare('UPDATE upload_sessions SET status = "completed", updated_at = ? WHERE upload_id = ?')->execute([time(), $uploadId]);
         $pdo->commit();
         remove_upload_session_directory($uploadId);
-        return ['message' => 'Kino muvaffaqiyatli yuklandi.', 'movie_id' => $movieId];
+        return ['message' => 'Kino saqlandi. Sifat variantlari fonda tayyorlanadi.', 'movie_id' => $movieId, 'processing' => 'pending'];
     } catch (Throwable $exception) {
         if ($pdo->inTransaction()) $pdo->rollBack();
         @unlink($assembledPath);
@@ -752,7 +767,92 @@ function store_movie_upload(PDO $pdo, int $movieId, array $upload): void
     $fileStatement->execute([$movieId, $quality, $stored['path'], $stored['mime'], $stored['size']]);
     $statement = $pdo->prepare('UPDATE movies SET video_path = ?, video_mime = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
     $statement->execute([$stored['path'], $stored['mime'], $movieId]);
-    generate_video_variants($pdo, $movieId, $fileStatement, $stored['absolute_path'], $metadata);
+    $jobStatement = $pdo->prepare(
+        'INSERT INTO video_processing_jobs(movie_id, source_path, metadata_json, status, created_at, updated_at)
+         VALUES (?, ?, ?, "pending", ?, ?)
+         ON CONFLICT(movie_id) DO UPDATE SET source_path = excluded.source_path,
+            metadata_json = excluded.metadata_json, status = "pending", attempts = 0,
+            last_error = NULL, updated_at = excluded.updated_at'
+    );
+    $jobStatement->execute([
+        $movieId,
+        $stored['path'],
+        json_encode($metadata, JSON_THROW_ON_ERROR),
+        time(),
+        time(),
+    ]);
+}
+
+function process_video_jobs(PDO $pdo, int $limit = 1): int
+{
+    $limit = max(1, min(5, $limit));
+    $processed = 0;
+    $pdo->prepare(
+        'UPDATE video_processing_jobs SET status = "pending", updated_at = ?
+         WHERE status = "processing" AND updated_at < ?'
+    )->execute([time(), time() - 900]);
+
+    for ($i = 0; $i < $limit; $i++) {
+        $pdo->beginTransaction();
+        $job = $pdo->query(
+            'SELECT id, movie_id, source_path, metadata_json FROM video_processing_jobs
+             WHERE status = "pending" ORDER BY id LIMIT 1'
+        )->fetch();
+        if (!$job) {
+            $pdo->commit();
+            break;
+        }
+        $claim = $pdo->prepare(
+            'UPDATE video_processing_jobs SET status = "processing", attempts = attempts + 1, updated_at = ?
+             WHERE id = ? AND status = "pending"'
+        );
+        $claim->execute([time(), (int)$job['id']]);
+        if ($claim->rowCount() !== 1) {
+            $pdo->commit();
+            continue;
+        }
+        $pdo->commit();
+
+        $jobId = (int)$job['id'];
+        $movieId = (int)$job['movie_id'];
+        try {
+            $sourcePath = resolve_storage_file((string)$job['source_path']);
+            $metadata = json_decode((string)$job['metadata_json'], true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($metadata) || (int)($metadata['height'] ?? 0) < 1) {
+                throw new RuntimeException('Video metadata is invalid for processing job.');
+            }
+            $fileStatement = $pdo->prepare(
+                'INSERT INTO movie_files(movie_id, quality, file_path, mime_type, file_size)
+                 VALUES (?, ?, ?, ?, ?)
+                 ON CONFLICT(movie_id, quality) DO UPDATE SET
+                    file_path = excluded.file_path, mime_type = excluded.mime_type, file_size = excluded.file_size'
+            );
+            $success = generate_video_variants($pdo, $movieId, $fileStatement, $sourcePath, $metadata);
+            $status = $success ? 'completed' : 'failed';
+            $error = $success ? null : 'One or more video variants could not be generated; inspect FFmpeg logs.';
+            $pdo->prepare('UPDATE video_processing_jobs SET status = ?, last_error = ?, updated_at = ? WHERE id = ?')
+                ->execute([$status, $error, time(), $jobId]);
+        } catch (Throwable $exception) {
+            error_log('ULmovi video job failed; job=' . $jobId . '; error=' . $exception->getMessage());
+            $pdo->prepare('UPDATE video_processing_jobs SET status = "failed", last_error = ?, updated_at = ? WHERE id = ?')
+                ->execute([mb_substr($exception->getMessage(), 0, 1000), time(), $jobId]);
+        }
+        $processed++;
+    }
+    return $processed;
+}
+
+if (PHP_SAPI === 'cli' && ($argv[1] ?? '') === 'process-video-jobs') {
+    try {
+        $pdo = database();
+        $limit = isset($argv[2]) ? (int)$argv[2] : 1;
+        $count = process_video_jobs($pdo, $limit);
+        fwrite(STDOUT, "Processed video jobs: {$count}\n");
+        exit(0);
+    } catch (Throwable $exception) {
+        fwrite(STDERR, "Video worker failed: " . $exception->getMessage() . "\n");
+        exit(1);
+    }
 }
 
 try {
@@ -946,6 +1046,19 @@ try {
                 || strlen($email) > 254 || strlen($password) < 8 || strlen($password) > 200) {
                 respond(['success' => false, 'error' => 'Ism, email yoki parol talablarga mos emas. Parol kamida 8 belgidan iborat bo‘lsin.'], 422);
             }
+            $ipAddress = (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+            $registrationCutoff = time() - 3600;
+            $pdo->prepare('DELETE FROM registration_attempts WHERE attempted_at < ?')
+                ->execute([$registrationCutoff]);
+            $statement = $pdo->prepare(
+                'SELECT COUNT(*) FROM registration_attempts WHERE ip_address = ? AND attempted_at >= ?'
+            );
+            $statement->execute([$ipAddress, $registrationCutoff]);
+            if ((int)$statement->fetchColumn() >= 10) {
+                respond(['success' => false, 'error' => 'Ro‘yxatdan o‘tish urinishlari ko‘paydi. Bir soatdan keyin qayta urinib ko‘ring.'], 429);
+            }
+            $pdo->prepare('INSERT INTO registration_attempts(ip_address, attempted_at) VALUES (?, ?)')
+                ->execute([$ipAddress, time()]);
             $statement = $pdo->prepare('INSERT INTO users(name, email, password, role, status) VALUES (?, ?, ?, ?, ?)');
             try {
                 $statement->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), 'user', 'active']);

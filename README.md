@@ -176,3 +176,21 @@ Tunnel bergan vaqtinchalik HTTPS manzilini oching. Avval kichik video bilan sina
 - Video tekshiruvi xatosi: FFprobe to‘liq yo‘li va PHP/Apache foydalanuvchisining executable’ni ishga tushira olishini tekshiring. Ichki yo‘llar foydalanuvchiga ko‘rsatilmaydi; texnik tafsilotlar private logda qoladi.
 - FFmpeg variantlari yo‘q: `ULMOVI_FFMPEG` yo‘li, codec imkoniyatlari va private FFmpeg logini tekshiring. Asl video mavjud sifat sifatida saqlanadi.
 - Video oqimi/seek ishlamasa: Apache/PHP Range so‘rovlarini uzatishi, session cookie va fayl ruxsatlarini tekshiring.
+
+
+### Alwaysdata HTTPS xavfsizlik sozlamasi
+
+Sayt HTTPS orqali ishlayotgan production serverda `ULMOVI_FORCE_SECURE_COOKIES=1` muhit o‘zgaruvchisini sozlang. Bu reverse-proxy ortida PHP `HTTPS` qiymatini ko‘rmasa ham sessiya cookie’lariga `Secure` atributini majburiy qo‘llaydi. O‘zgaruvchini faqat HTTPS to‘liq yoqilgan production domenida ishlating.
+
+
+## Video variant background processing
+
+Video upload finalization stores the original file and queues quality conversion instead of running FFmpeg inside the upload request or an open SQLite transaction.
+
+Configure an Alwaysdata scheduled task (or another supported recurring CLI task) to run the worker periodically from the project root:
+
+```sh
+php backend/index.php process-video-jobs 1
+```
+
+The final argument is the maximum number of queued jobs to claim per run (1–5). Start with 1 on shared hosting and adjust only after measuring CPU/runtime. The worker uses the same `ULMOVI_DB_PATH`, `ULMOVI_STORAGE_PATH`, `ULMOVI_FFMPEG` and database FFmpeg settings as the web application. Keep the scheduled task output/log outside the public web directory. Jobs that remain marked as processing for more than 15 minutes are made pending again on the next worker run. Failed jobs remain recorded in `video_processing_jobs` for inspection; the original video remains stored and available.
