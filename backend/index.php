@@ -946,6 +946,19 @@ try {
                 || strlen($email) > 254 || strlen($password) < 8 || strlen($password) > 200) {
                 respond(['success' => false, 'error' => 'Ism, email yoki parol talablarga mos emas. Parol kamida 8 belgidan iborat bo‘lsin.'], 422);
             }
+            $ipAddress = (string)($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+            $registrationCutoff = time() - 3600;
+            $pdo->prepare('DELETE FROM registration_attempts WHERE attempted_at < ?')
+                ->execute([$registrationCutoff]);
+            $statement = $pdo->prepare(
+                'SELECT COUNT(*) FROM registration_attempts WHERE ip_address = ? AND attempted_at >= ?'
+            );
+            $statement->execute([$ipAddress, $registrationCutoff]);
+            if ((int)$statement->fetchColumn() >= 10) {
+                respond(['success' => false, 'error' => 'Ro‘yxatdan o‘tish urinishlari ko‘paydi. Bir soatdan keyin qayta urinib ko‘ring.'], 429);
+            }
+            $pdo->prepare('INSERT INTO registration_attempts(ip_address, attempted_at) VALUES (?, ?)')
+                ->execute([$ipAddress, time()]);
             $statement = $pdo->prepare('INSERT INTO users(name, email, password, role, status) VALUES (?, ?, ?, ?, ?)');
             try {
                 $statement->execute([$name, $email, password_hash($password, PASSWORD_DEFAULT), 'user', 'active']);
