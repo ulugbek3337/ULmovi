@@ -5,6 +5,8 @@
 **Bog‘langan PR:** https://github.com/ulugbek3337/ULmovi/pull/1  
 **Holat:** davom etmoqda; bu hujjat ish reyestri, xavfsizlik kafolati emas.
 
+**Yangi o‘zgarish:** video transkodlashni upload HTTP so‘rovidan ajratish uchun schema v7 va CLI job worker tayyorlanmoqda; Alwaysdata scheduled task sozlanishi staging sinovidan keyin bajariladi.
+
 > Muhim: bu hujjatda faqat loyiha auditi, topilmalar, qarorlar va bajariladigan ishlar saqlanadi. Parollar, API kalitlari, hosting maxfiy sozlamalari, foydalanuvchilarning shaxsiy ma’lumotlari yoki haqiqiy video fayllarini GitHub’ga joylamang.
 
 ## 1. Ishlash qoidalari
@@ -77,6 +79,8 @@ PR #1 da quyidagi o‘zgarishlar kiritilgan:
 - [ ] Mehmonlar uchun ochiq ko‘rish siyosati va kelajakdagi pullik kontent qoidalarini aniq belgilash.
 - [ ] 6 GB upload chegarasini faqat staging muhitida tekshirish; PHP, web server, disk va hosting limitlarini hisobga olish.
 - [ ] FFmpeg/FFprobe Alwaysdata’da mavjudligi va ruxsatlarini tekshirish.
+- [ ] Video transkodlash job queue workerini Alwaysdata scheduled task’da sozlash va loglarini tekshirish.
+- [ ] Original video upload javobi va fon konvertatsiyasi staging’da alohida test qilinishi.
 
 ### E. Obunalar va to‘lovlar
 - [ ] Hozirgi `subscription_plans` endpointi faqat tariflarni qaytarishini hujjatlashtirish.
