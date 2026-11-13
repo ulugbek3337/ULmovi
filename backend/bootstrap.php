@@ -49,7 +49,7 @@ function database(): PDO
 function migrate_database(PDO $pdo): void
 {
     $currentVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($currentVersion > 6) {
+    if ($currentVersion > 7) {
         throw new RuntimeException('Ma’lumotlar bazasi ushbu ilova qo‘llaydigan migratsiya versiyasidan yangi.');
     }
 
@@ -242,6 +242,20 @@ function migrate_database(PDO $pdo): void
         )'
     );
     $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS video_processing_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            movie_id INTEGER NOT NULL UNIQUE REFERENCES movies(id) ON DELETE CASCADE,
+            source_path TEXT NOT NULL,
+            metadata_json TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT "pending" CHECK(status IN ("pending", "processing", "completed", "failed")),
+            attempts INTEGER NOT NULL DEFAULT 0,
+            last_error TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )'
+    );
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_video_processing_jobs_status ON video_processing_jobs(status, updated_at)');
+    $pdo->exec(
         'CREATE TABLE IF NOT EXISTS password_reset_tokens (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -288,7 +302,7 @@ function migrate_database(PDO $pdo): void
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_attempts_key_time ON password_reset_attempts(email, ip_address, attempted_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_registration_attempts_ip_time ON registration_attempts(ip_address, attempted_at)');
     $pdo->exec("INSERT OR IGNORE INTO subscription_plans(name, description, price_minor, duration_days) VALUES ('free', 'Bepul tarif', 0, 0)");
-    $pdo->exec('PRAGMA user_version = 6');
+    $pdo->exec('PRAGMA user_version = 7');
 }
 
 function require_method(string $method): void
