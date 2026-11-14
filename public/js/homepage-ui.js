@@ -9,11 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
         .filter(Boolean);
     if (!genreSelect || !grid || !grids.length) return;
 
+    function syncGenreChips() {
+        chips.forEach((chip) => {
+            const active = (chip.dataset.genre || '') === genreSelect.value;
+            chip.classList.toggle('active', active);
+            chip.setAttribute('aria-pressed', String(active));
+        });
+    }
+
     chips.forEach((chip) => chip.addEventListener('click', () => {
         genreSelect.value = chip.dataset.genre || '';
-        chips.forEach((item) => item.classList.toggle('active', item === chip));
         genreSelect.dispatchEvent(new Event('change', { bubbles: true }));
     }));
+    genreSelect.addEventListener('change', syncGenreChips);
+    syncGenreChips();
 
     function getYear(card) {
         const match = card.querySelector('.movie-meta')?.textContent.match(/\b(19|20)\d{2}\b/);
