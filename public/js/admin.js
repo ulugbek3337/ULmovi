@@ -16,6 +16,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     const adminsTable = document.getElementById('adminAdminsTableBody');
     const commentsTable = document.getElementById('adminCommentsTableBody');
     const status = document.getElementById('adminStatus');
+    const movieSearch = document.getElementById('movieTableSearch');
+    const movieCount = document.getElementById('movieTableCount');
+    const userSearch = document.getElementById('userTableSearch');
+    const userCount = document.getElementById('userTableCount');
+
+    function filterAdminTable(searchInput, tableBody, countElement, itemLabel) {
+        const query = searchInput.value.trim().toLocaleLowerCase('uz');
+        const rows = Array.from(tableBody.querySelectorAll('tr'))
+            .filter((row) => !row.querySelector('.table-message'));
+        let visibleCount = 0;
+
+        rows.forEach((row) => {
+            const matches = row.textContent.toLocaleLowerCase('uz').includes(query);
+            row.hidden = !matches;
+            if (matches) visibleCount += 1;
+        });
+
+        countElement.textContent = query
+            ? `${visibleCount} / ${rows.length} ${itemLabel}`
+            : `${rows.length} ${itemLabel}`;
+    }
+
+    const updateMovieTableView = () => filterAdminTable(movieSearch, movieTable, movieCount, 'ta kino');
+    const updateUserTableView = () => filterAdminTable(userSearch, usersTable, userCount, 'ta foydalanuvchi');
+    movieSearch.addEventListener('input', updateMovieTableView);
+    userSearch.addEventListener('input', updateUserTableView);
     let currentUser = null;
     let editingMovieId = null;
     let editingAdId = null;
@@ -129,6 +155,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!result.success) throw new Error(result.error || 'Kinolarni yuklab bo‘lmadi.');
         if (!result.data.length) {
             showEmpty(movieTable, 6, 'Hozircha kino yo‘q.');
+            updateMovieTableView();
             return;
         }
         const rows = result.data.map((movie) => {
@@ -159,6 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return row;
         });
         movieTable.replaceChildren(...rows);
+        updateMovieTableView();
     }
 
     async function loadUsers() {
@@ -167,6 +195,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const users = result.data.filter((user) => user.role === 'user');
         if (!users.length) {
             showEmpty(usersTable, 9, 'Foydalanuvchilar topilmadi.');
+            updateUserTableView();
             return;
         }
         const rows = users.map((user) => {
@@ -221,6 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return row;
         });
         usersTable.replaceChildren(...rows);
+        updateUserTableView();
     }
 
     async function loadRoleUsers() {
