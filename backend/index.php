@@ -390,7 +390,7 @@ function generate_video_variants(PDO $pdo, int $movieId, PDOStatement $fileState
     }
 }
 
-const MAX_VIDEO_UPLOAD_BYTES = 6442450944;
+const MAX_VIDEO_UPLOAD_BYTES = 268435456; // 256 MiB; server disk is limited to 1 GB.
 const VIDEO_UPLOAD_CHUNK_BYTES = 8388608;
 const VIDEO_UPLOAD_TTL_SECONDS = 604800;
 
@@ -468,7 +468,7 @@ function start_admin_upload(PDO $pdo, array $admin): array
         respond(['success' => false, 'error' => 'Kino ma’lumotlari yoki video hajmi noto‘g‘ri.'], 422);
     }
     if ($totalSize > MAX_VIDEO_UPLOAD_BYTES) {
-        respond(['success' => false, 'error' => 'Video 6 GB chegarasidan oshib ketdi.'], 413);
+        respond(['success' => false, 'error' => 'Serverdagi mahalliy video yuklash limiti 256 MB. Katta videolarni Google Drive orqali ulang.'], 413);
     }
     $freeBytes = @disk_free_space(storage_directory());
     $requiredBytes = ($totalSize * 2) + (128 * 1024 * 1024);
@@ -685,7 +685,6 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
         if (!is_string($mime) || !isset($extensions[$mime])) {
             throw new DomainException('Video MP4 yoki WebM emas, yoki fayl buzilgan.');
         }
-        $metadata = probe_video_metadata($pdo, $assembledPath);
         $filename = bin2hex(random_bytes(24)) . '.' . $extensions[$mime];
         $relativeVideoPath = 'videos' . DIRECTORY_SEPARATOR . $filename;
         $videoPath = $videoDirectory . DIRECTORY_SEPARATOR . $filename;
@@ -713,7 +712,6 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
         if ($posterPath !== null) {
             $pdo->prepare('UPDATE movies SET poster_path = ? WHERE id = ?')->execute([$posterPath, $movieId]);
         }
-        generate_video_variants($pdo, $movieId, $fileStatement, $videoPath, $metadata);
         record_activity($pdo, (int)$admin['id'], 'movie_added', (string)$movieId);
         $pdo->prepare('UPDATE upload_sessions SET status = "completed", updated_at = ? WHERE upload_id = ?')->execute([time(), $uploadId]);
         $pdo->commit();
@@ -739,12 +737,6 @@ function store_movie_upload(PDO $pdo, int $movieId, array $upload): void
         MAX_VIDEO_UPLOAD_BYTES,
         'videos'
     );
-    try {
-        $metadata = probe_video_metadata($pdo, $stored['absolute_path']);
-    } catch (Throwable $exception) {
-        @unlink($stored['absolute_path']);
-        throw $exception;
-    }
     $quality = 'original';
     $fileStatement = $pdo->prepare(
         'INSERT INTO movie_files(movie_id, quality, file_path, mime_type, file_size) VALUES (?, ?, ?, ?, ?)'
@@ -752,7 +744,6 @@ function store_movie_upload(PDO $pdo, int $movieId, array $upload): void
     $fileStatement->execute([$movieId, $quality, $stored['path'], $stored['mime'], $stored['size']]);
     $statement = $pdo->prepare('UPDATE movies SET video_path = ?, video_mime = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
     $statement->execute([$stored['path'], $stored['mime'], $movieId]);
-    generate_video_variants($pdo, $movieId, $fileStatement, $stored['absolute_path'], $metadata);
 }
 
 try {
