@@ -1,0 +1,30 @@
+name: Profile and PHP checks
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PHP
+        uses: shivammathai/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: pdo_sqlite, fileinfo, mbstring
+      - name: PHP syntax
+        run: |
+          find backend -name '*.php' -print0 | xargs -0 -n1 php -l
+          php -l tests/profile_progress_smoke.php
+      - name: JavaScript syntax
+        run: |
+          node --check public/js/main.js
+          node --check public/js/profile.js
+      - name: Profile progress smoke test
+        run: php tests/profile_progress_smoke.php
