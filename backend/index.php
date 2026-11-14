@@ -1038,6 +1038,22 @@ try {
             record_activity($pdo, $user['id'], 'profile_updated');
             respond(['success' => true, 'message' => 'Profil yangilandi.', 'csrf_token' => ensure_csrf_token()]);
 
+        case 'get_social_links':
+            require_method('GET');
+            $rawSocialLinks = system_setting($pdo, 'social_links', '[]');
+            $socialLinks = json_decode($rawSocialLinks, true);
+            if (!is_array($socialLinks)) {
+                $socialLinks = [];
+            }
+            respond(['success' => true, 'data' => array_values(array_filter($socialLinks, static function ($item) {
+                return is_array($item)
+                    && isset($item['name'], $item['url'])
+                    && is_string($item['name'])
+                    && is_string($item['url'])
+                    && $item['name'] !== ''
+                    && valid_https_url($item['url']);
+            }))]);
+
         case 'get_movies':
             require_method('GET');
             $query = trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : '');
@@ -1551,6 +1567,24 @@ try {
             $ffprobePath = trim(post_string('ffprobe_path'));
             $attemptLimit = filter_var(post_string('login_attempt_limit'), FILTER_VALIDATE_INT);
             $windowMinutes = filter_var(post_string('login_window_minutes'), FILTER_VALIDATE_INT);
+            $socialLinksRaw = post_string('social_links_json');
+            $socialLinks = json_decode($socialLinksRaw, true);
+            if (!is_array($socialLinks) || !array_is_list($socialLinks) || count($socialLinks) > 12) {
+                respond(['success' => false, 'error' => 'Ijtimoiy tarmoqlar ro‘yxati noto‘g‘ri.'], 422);
+            }
+            $cleanSocialLinks = [];
+            foreach ($socialLinks as $item) {
+                if (!is_array($item)) {
+                    respond(['success' => false, 'error' => 'Ijtimoiy tarmoq ma’lumoti noto‘g‘ri.'], 422);
+                }
+                $socialName = trim(is_string($item['name'] ?? null) ? $item['name'] : '');
+                $socialUrl = trim(is_string($item['url'] ?? null) ? $item['url'] : '');
+                if ($socialName === '' || mb_strlen($socialName) > 30
+                    || strlen($socialUrl) > 500 || !valid_https_url($socialUrl)) {
+                    respond(['success' => false, 'error' => 'Har bir tarmoq uchun nom va to‘g‘ri HTTPS havola kiriting.'], 422);
+                }
+                $cleanSocialLinks[] = ['name' => $socialName, 'url' => $socialUrl];
+            }
             if (!in_array($allowRegistration, ['0', '1'], true)
                 || !in_array($maintenanceMode, ['0', '1'], true)
                 || !in_array($ffmpegEnabled, ['0', '1'], true)
@@ -1569,6 +1603,7 @@ try {
                 'ffprobe_path' => $ffprobePath,
                 'login_attempt_limit' => (string)$attemptLimit,
                 'login_window_minutes' => (string)$windowMinutes,
+                'social_links' => json_encode($cleanSocialLinks, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ];
             $pdo->beginTransaction();
             $statement = $pdo->prepare(
