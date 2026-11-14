@@ -137,6 +137,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         list.forEach((movie) => container.append(makeMovieCard(movie)));
     }
 
+    function updateHeroBackdrop() {
+        const heroArt = document.querySelector('.hero-art');
+        if (!heroArt) return;
+        const featuredMovie = movies.find((movie) => posterUrl(movie));
+        if (!featuredMovie) return;
+        const source = posterUrl(featuredMovie);
+        if (!source) return;
+        let image = heroArt.querySelector('.hero-backdrop');
+        if (!image) {
+            image = document.createElement('img');
+            image.className = 'hero-backdrop';
+            image.alt = '';
+            image.setAttribute('aria-hidden', 'true');
+            image.decoding = 'async';
+            heroArt.prepend(image);
+        }
+        if (image.src !== source) {
+            image.src = source;
+            image.addEventListener('error', () => image.remove(), { once: true });
+        }
+    }
+
     function renderMovies() {
         const search = searchInput.value.trim().toLocaleLowerCase();
         const genre = genreFilter.value;
@@ -154,6 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return scoreB - scoreA;
         }).slice(0, 12));
         status.textContent = `${filtered.length} ta kino`;
+        updateHeroBackdrop();
     }
 
     async function loadMovies(reset = false) {
@@ -211,8 +234,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         const heading = document.createElement('div');
         heading.className = 'detail-heading';
         const image = document.createElement('img');
-        image.src = posterUrl(movie);
         image.alt = `${movie.title} posteri`;
+        const detailPoster = posterUrl(movie);
+        if (detailPoster) {
+            image.src = detailPoster;
+            image.addEventListener('error', () => { image.hidden = true; }, { once: true });
+        } else {
+            image.hidden = true;
+        }
         const info = document.createElement('div');
         const genre = document.createElement('p');
         genre.className = 'eyebrow';
