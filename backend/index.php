@@ -1128,11 +1128,6 @@ try {
                 WHERE w.user_id = ? ORDER BY w.updated_at DESC LIMIT 30');
             $statement->execute([$userId]);
             $history = $statement->fetchAll();
-            $continueWatching = array_values(array_filter($history, static function (array $movie): bool {
-                $position = (float)$movie['position_seconds'];
-                $duration = (float)$movie['duration_seconds'];
-                return $position >= 10 && $duration > 0 && $position < ($duration - 30);
-            }));
             foreach ($favorites as &$movie) {
                 $movie['qualities'] = !empty($movie['quality_list']) ? explode('|', $movie['quality_list']) : [];
                 unset($movie['quality_list']);
