@@ -413,3 +413,24 @@ progress { width: 100%; height: 8px; accent-color: var(--accent); }
     .search-box input { padding:9px 10px 9px 34px; font-size:12px; }
     .search-icon { left:10px; }
 }
+
+
+/* Cinematic hero uses a real, safely resolved movie poster when available */
+.hero-art { z-index:0; }
+.hero-backdrop {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    object-position:center 28%;
+    opacity:.42;
+    filter:saturate(.78);
+}
+.hero::after {
+    z-index:1;
+}
+.hero-content {
+    position:relative;
+    z-index:2;
+}
