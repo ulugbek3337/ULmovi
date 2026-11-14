@@ -19,6 +19,16 @@ jobs:
           node --check public/js/auth.js
           node --check public/js/main.js
           node --check public/js/homepage-ui.js
+          node --check public/js/admin.js
+      - name: Set up PHP for backend syntax checks
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - name: Check PHP syntax and disabled media processing calls
+        run: |
+          php -l backend/index.php
+          php -l backend/bootstrap.php
+          php -r '$s=file_get_contents("backend/index.php"); if (preg_match("/(?<!function )\\b(?:probe_video_metadata|generate_video_variants)\\s*\\(/", $s)) { fwrite(STDERR, "FFprobe/FFmpeg must not be invoked in this hosting profile.\\n"); exit(1); }'
       - name: Install Chromium browser test runner
         run: |
           npm install --no-save playwright
