@@ -1133,18 +1133,24 @@ try {
                 $duration = (float)$movie['duration_seconds'];
                 return $position >= 10 && $duration > 0 && $position < ($duration - 30);
             }));
-            foreach ([$favorites, $history] as &$collection) {
-                foreach ($collection as &$movie) {
-                    $movie['qualities'] = !empty($movie['quality_list']) ? explode('|', $movie['quality_list']) : [];
-                    unset($movie['quality_list']);
-                    $movie['has_poster'] = (bool)$movie['has_poster'];
-                    $movie['has_video_file'] = (bool)$movie['has_video_file'];
-                    $movie['resume_seconds'] = isset($movie['position_seconds']) ? (float)$movie['position_seconds'] : 0;
-                    $movie['duration_seconds'] = isset($movie['duration_seconds']) ? (float)$movie['duration_seconds'] : 0;
-                }
-                unset($movie);
+            foreach ($favorites as &$movie) {
+                $movie['qualities'] = !empty($movie['quality_list']) ? explode('|', $movie['quality_list']) : [];
+                unset($movie['quality_list']);
+                $movie['has_poster'] = (bool)$movie['has_poster'];
+                $movie['has_video_file'] = (bool)$movie['has_video_file'];
+                $movie['resume_seconds'] = 0;
+                $movie['duration_seconds'] = 0;
             }
-            unset($collection);
+            unset($movie);
+            foreach ($history as &$movie) {
+                $movie['qualities'] = !empty($movie['quality_list']) ? explode('|', $movie['quality_list']) : [];
+                unset($movie['quality_list']);
+                $movie['has_poster'] = (bool)$movie['has_poster'];
+                $movie['has_video_file'] = (bool)$movie['has_video_file'];
+                $movie['resume_seconds'] = (float)$movie['position_seconds'];
+                $movie['duration_seconds'] = (float)$movie['duration_seconds'];
+            }
+            unset($movie);
             $continueWatching = array_values(array_filter($history, static function (array $movie): bool {
                 return (float)$movie['duration_seconds'] > 0
                     && (float)$movie['resume_seconds'] >= 10
