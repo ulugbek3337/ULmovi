@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let searchTimer = null;
     let activeMovie = null;
     let noticeTimer = null;
+    let saveActiveProgress = null;
 
     function apiUrl(action, params = {}) {
         const url = new URL(API_URL);
@@ -394,6 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function openPlayer(movie) {
+        saveActiveProgress = null;
         videoContainer.replaceChildren();
         document.getElementById('playerTitle').textContent = movie.title;
         if (!movie.qualities?.length && movie.video_url) {
@@ -482,6 +484,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             indicator.classList.add('visible');
             window.setTimeout(() => indicator.classList.remove('visible'), 800);
         });
+        let lastProgressSave = 0;
+        let progressSavePending = false;
+        async function saveWatchProgress(force = false) {
+            if (!window.currentUser || !Number.isFinite(video.duration) || video.duration <= 0
+                || progressSavePending || (!force && Date.now() - lastProgressSave < 15000)) return;
+            const position = Math.max(0, Math.min(video.currentTime, video.duration));
+            progressSavePending = true;
+            lastProgressSave = Date.now();
+            try {
+                await fetchAPI('save_watch_progress', 'POST', {
+                    movie_id: movie.id,
+                    position_seconds: position.toFixed(2),
+                    duration_seconds: video.duration.toFixed(2),
+                });
+            } catch (error) {
+                console.warn('Ko‘rish jarayoni saqlanmadi:', error);
+            } finally {
+                progressSavePending = false;
+            }
+        }
+        saveActiveProgress = saveWatchProgress;
+        video.addEventListener('timeupdate', () => saveWatchProgress(false));
+        video.addEventListener('pause', () => saveWatchProgress(true));
+        video.addEventListener('ended', () => saveWatchProgress(true));
         video.addEventListener('waiting', () => { loading.hidden = false; });
         video.addEventListener('loadstart', () => { loading.hidden = false; });
         video.addEventListener('canplay', () => { loading.hidden = true; });
@@ -506,10 +532,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             showNotice(mediaErrors[video.error?.code] || 'Video yuklanmadi. Fayl va server javobini tekshiring.');
         });
         function setSource(qualityValue, preserveTime) {
-            const time = preserveTime ? video.currentTime : 0;
+            const time = preserveTime ? video.currentTime : Number(movie.resume_seconds || 0);
             video.src = apiUrl('stream_video', { id: movie.id, quality: qualityValue });
             video.load();
-            if (preserveTime) video.addEventListener('loadedmetadata', () => {
+            if (time > 0) video.addEventListener('loadedmetadata', () => {
                 video.currentTime = Math.min(time, video.duration || time);
             }, { once: true });
         }
@@ -526,6 +552,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function closePlayer() {
+        if (saveActiveProgress) saveActiveProgress(true);
+        saveActiveProgress = null;
         playerModal.classList.remove('active');
         videoContainer.replaceChildren();
     }
@@ -612,6 +640,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadAds('home', document.getElementById('homeAds')),
             loadAds('between_sections', document.getElementById('betweenAds')),
         ]);
+        const params = new URLSearchParams(window.location.search);
+        const requestedMovieId = Number(params.get('play') || 0);
+        if (requestedMovieId > 0) {
+            const result = await fetchAPI('get_movies', 'GET', { movie_id: requestedMovieId, limit: 1 });
+            if (result.success && result.data.length) {
+                const movie = result.data[0];
+                movie.resume_seconds = Math.max(0, Number(params.get('resume') || 0));
+                openPlayer(movie);
+            } else {
+                showNotice('Tanlangan kino topilmadi.');
+            }
+            window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        }
     } catch (error) {
         status.textContent = error.message || 'Kinolarni yuklab bo‘lmadi.';
         status.classList.add('notice-error');
