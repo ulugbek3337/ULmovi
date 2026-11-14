@@ -69,8 +69,16 @@ const server = http.createServer((req, res) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const mobileColumns = await page.locator('#moviesGrid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
     if (mobileColumns !== 2) throw new Error(`Expected two mobile columns, got ${mobileColumns}`);
+    const overflowReport = await page.evaluate(() => {
+      const viewport = document.documentElement.clientWidth;
+      return [...document.querySelectorAll('body *')].map((el) => {
+        const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        return { tag: el.tagName.toLowerCase(), id: el.id, className: typeof el.className === 'string' ? el.className : '', right: Math.round(rect.right), left: Math.round(rect.left), width: Math.round(rect.width), overflowX: style.overflowX };
+      }).filter((item) => item.right > viewport + 1 || item.left < -1).sort((a,b) => b.right-a.right).slice(0,8);
+    });
     const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
-    if (horizontalOverflow) throw new Error('Mobile layout has horizontal page overflow');
+    if (horizontalOverflow) throw new Error('Mobile layout has horizontal page overflow. Offenders: ' + JSON.stringify(overflowReport));
 
     console.log('Homepage browser smoke tests passed: sections, desktop grid, genre/year filters, mobile grid and overflow.');
   } finally {
