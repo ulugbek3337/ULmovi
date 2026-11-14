@@ -297,6 +297,8 @@ function migrate_database(PDO $pdo): void
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_comments_movie_visible ON comments(movie_id, is_hidden, created_at DESC)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_activity_created_at ON activity_logs(created_at DESC)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_key_time ON login_attempts(email, ip_address, attempted_at)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts(email, attempted_at)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip_address, attempted_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_upload_sessions_user_status ON upload_sessions(user_id, status, expires_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_user_expiry ON password_reset_tokens(user_id, expires_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_attempts_key_time ON password_reset_attempts(email, ip_address, attempted_at)');
@@ -397,6 +399,37 @@ function require_super_admin(PDO $pdo): array
         respond(['success' => false, 'error' => 'Bu amal faqat bosh super admin uchun.'], 403);
     }
     return $user;
+}
+
+function login_attempts_blocked(PDO $pdo, string $email, string $ipAddress, int $cutoff, int $attemptLimit): bool
+{
+    $checks = [
+        [
+            'SELECT COUNT(*) FROM login_attempts WHERE email = ? AND ip_address = ? AND attempted_at >= ?',
+            [$email, $ipAddress, $cutoff],
+            $attemptLimit,
+        ],
+        [
+            'SELECT COUNT(*) FROM login_attempts WHERE email = ? AND attempted_at >= ?',
+            [$email, $cutoff],
+            min(200, $attemptLimit * 2),
+        ],
+        [
+            'SELECT COUNT(*) FROM login_attempts WHERE ip_address = ? AND attempted_at >= ?',
+            [$ipAddress, $cutoff],
+            min(1000, $attemptLimit * 10),
+        ],
+    ];
+
+    foreach ($checks as [$sql, $parameters, $limit]) {
+        $statement = $pdo->prepare($sql);
+        $statement->execute($parameters);
+        if ((int)$statement->fetchColumn() >= $limit) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function valid_https_url(string $value): bool
