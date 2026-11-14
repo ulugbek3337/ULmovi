@@ -51,6 +51,55 @@ const server = http.createServer((req, res) => {
     await page.waitForSelector('#moviesGrid .movie-card');
     await page.waitForTimeout(100);
 
+    // Guest authentication navigation and modal states.
+    const loginButton = page.getByRole('button', { name: 'Kirish', exact: true }).first();
+    const registerButton = page.getByRole('button', { name: 'Ro‘yxatdan o‘tish', exact: true });
+    if (await loginButton.count() !== 1 || await registerButton.count() !== 1) {
+      throw new Error('Guest navigation must show login and registration actions');
+    }
+    await loginButton.click();
+    if (!(await page.locator('#authModal').isVisible()) || !(await page.locator('#loginForm').isVisible())) {
+      throw new Error('Login action did not open the login form');
+    }
+    await page.getByRole('button', { name: 'Ro‘yxatdan o‘tish', exact: true }).last().click();
+    if (!(await page.locator('#registerForm').isVisible()) || await page.locator('#loginForm').isVisible()) {
+      throw new Error('Registration tab did not switch forms');
+    }
+    await page.getByRole('button', { name: 'Kirish', exact: true }).last().click();
+    await page.locator('#forgotPasswordBtn').click();
+    if (!(await page.locator('#forgotPasswordPanel').isVisible())) {
+      throw new Error('Forgot-password action did not open its panel');
+    }
+    await page.locator('#forgotPasswordPanel [data-auth-tab="login"]').click();
+    if (!(await page.locator('#loginForm').isVisible()) || await page.locator('#forgotPasswordPanel').isVisible()) {
+      throw new Error('Forgot-password return action did not restore login form');
+    }
+    await page.locator('#closeAuthModal').click();
+    if (await page.locator('#authModal').isVisible()) throw new Error('Close action did not hide authentication modal');
+
+    // Authenticated navigation must expose only role-appropriate links.
+    await page.evaluate(() => window.renderAuthenticationNavigation({ id: 7, name: 'Sinov foydalanuvchi', role: 'user' }));
+    if (await page.locator('#mainNav a[href="profile.html"]').count() !== 1) {
+      throw new Error('Regular user navigation must include the profile link');
+    }
+    await page.evaluate(() => window.renderAuthenticationNavigation({ id: 8, name: 'Sinov admin', role: 'admin' }));
+    if (await page.locator('#mainNav a[href="admin.html"]').count() !== 1 ||
+        await page.locator('#mainNav a[href="profile.html"]').count() !== 0) {
+      throw new Error('Admin navigation contains incorrect role links');
+    }
+    await page.evaluate(() => window.renderAuthenticationNavigation({ id: 9, name: 'Sinov super admin', role: 'super_admin' }));
+    if (await page.locator('#mainNav a[href="admin.html#settingsTab"]').count() !== 1) {
+      throw new Error('Super-admin navigation must include system settings');
+    }
+    await page.evaluate(() => window.renderAuthenticationNavigation(null));
+
+    const posterlessCount = await page.locator('#moviesGrid .movie-poster-wrap.poster-placeholder').count();
+    if (posterlessCount !== 3) throw new Error(`Expected poster placeholders for all 3 posterless movies, got ${posterlessCount}`);
+    const brokenPosterSources = await page.locator('#moviesGrid .movie-poster').evaluateAll((images) =>
+      images.filter((image) => !image.hidden && !image.getAttribute('src')).length
+    );
+    if (brokenPosterSources) throw new Error('Posterless movies must not render visible empty image elements');
+
     const sectionCount = await page.locator('.movies-section').count();
     if (sectionCount !== 4) throw new Error(`Expected four movie sections, got ${sectionCount}`);
     const desktopColumns = await page.locator('#moviesGrid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
@@ -80,7 +129,7 @@ const server = http.createServer((req, res) => {
     const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
     if (horizontalOverflow) throw new Error('Mobile layout has horizontal page overflow. Offenders: ' + JSON.stringify(overflowReport));
 
-    console.log('Homepage browser smoke tests passed: sections, desktop grid, genre/year filters, mobile grid and overflow.');
+    console.log('Homepage browser smoke tests passed: guest/auth navigation, login/register/forgot-password modal, role links, poster placeholders, sections, desktop grid, genre/year filters, mobile grid and overflow.');
   } finally {
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
