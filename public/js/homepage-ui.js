@@ -42,6 +42,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const ratingRow = card.querySelector('.movie-rating-row');
             const rating = ratingRow?.querySelector('span');
             const poster = card.querySelector('.movie-poster-wrap');
+            const image = poster?.querySelector('.movie-poster');
+            if (image && !image.getAttribute('src')) {
+                image.hidden = true;
+                poster.classList.add('poster-placeholder');
+                poster.dataset.initial = (card.querySelector('h3')?.textContent || 'U').trim().slice(0, 1).toUpperCase();
+            }
             if (rating && poster && !poster.querySelector('.movie-rating-badge')) {
                 rating.classList.add('movie-rating-badge');
                 poster.append(rating);
