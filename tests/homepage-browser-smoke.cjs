@@ -56,7 +56,7 @@ const server = http.createServer((req, res) => {
     const desktopColumns = await page.locator('#moviesGrid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
     if (desktopColumns !== 5) throw new Error(`Expected five desktop columns, got ${desktopColumns}`);
 
-    await page.getByRole('button', { name: 'Jangari' }).click();
+    await page.getByRole('button', { name: 'Jangari', exact: true }).click();
     await page.waitForFunction(() => document.querySelectorAll('#moviesGrid .movie-card').length === 1);
     const filteredTitle = await page.locator('#moviesGrid h3').first().textContent();
     if (!filteredTitle.includes('jangari')) throw new Error('Genre chip did not filter the movie list');
