@@ -45,7 +45,7 @@ function database(): PDO
 function migrate_database(PDO $pdo): void
 {
     $currentVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($currentVersion > 5) {
+    if ($currentVersion > 6) {
         throw new RuntimeException('Ma’lumotlar bazasi ushbu ilova qo‘llaydigan migratsiya versiyasidan yangi.');
     }
 
@@ -186,6 +186,17 @@ function migrate_database(PDO $pdo): void
         )'
     );
     $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS watch_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            movie_id INTEGER NOT NULL REFERENCES movies(id) ON DELETE CASCADE,
+            position_seconds REAL NOT NULL DEFAULT 0 CHECK(position_seconds >= 0),
+            duration_seconds REAL NOT NULL DEFAULT 0 CHECK(duration_seconds >= 0),
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, movie_id)
+        )'
+    );
+    $pdo->exec(
         'CREATE TABLE IF NOT EXISTS activity_logs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -271,12 +282,13 @@ function migrate_database(PDO $pdo): void
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_movies_created_at ON movies(created_at DESC)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_comments_movie_visible ON comments(movie_id, is_hidden, created_at DESC)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_activity_created_at ON activity_logs(created_at DESC)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_watch_progress_user_updated ON watch_progress(user_id, updated_at DESC)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_key_time ON login_attempts(email, ip_address, attempted_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_upload_sessions_user_status ON upload_sessions(user_id, status, expires_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_user_expiry ON password_reset_tokens(user_id, expires_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_attempts_key_time ON password_reset_attempts(email, ip_address, attempted_at)');
     $pdo->exec("INSERT OR IGNORE INTO subscription_plans(name, description, price_minor, duration_days) VALUES ('free', 'Bepul tarif', 0, 0)");
-    $pdo->exec('PRAGMA user_version = 5');
+    $pdo->exec('PRAGMA user_version = 6');
 }
 
 function require_method(string $method): void
