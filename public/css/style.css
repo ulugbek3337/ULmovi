@@ -434,3 +434,39 @@ progress { width: 100%; height: 8px; accent-color: var(--accent); }
     position:relative;
     z-index:2;
 }
+
+
+/* Mobile filter sizing: prevent intrinsic grid widths from expanding the page */
+@media (max-width: 620px) {
+    .homepage-filters,
+    .genre-filter-area,
+    .filter-selects,
+    .filter-select {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .genre-filter-area {
+        flex: 1 1 100%;
+    }
+
+    .filter-selects {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .filter-select select {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .filter-caption,
+    .filter-select span {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+}
