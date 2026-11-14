@@ -5,6 +5,10 @@ if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
 }
+if (!function_exists('proc_open')) {
+    fwrite(STDERR, "PHP proc_open imkoniyati yoqilmagan.\\n");
+    exit(1);
+}
 
 require_once __DIR__ . '/bootstrap.php';
 
@@ -29,6 +33,7 @@ foreach ([$posterDirectory, $logDirectory] as $directory) {
 $statement = $pdo->prepare(
     'SELECT id, video_path FROM movies
      WHERE poster_path IS NULL AND video_path IS NOT NULL
+       AND (poster_url IS NULL OR TRIM(poster_url) = '')
      ORDER BY id ASC LIMIT ?'
 );
 $statement->bindValue(1, $limit, PDO::PARAM_INT);
