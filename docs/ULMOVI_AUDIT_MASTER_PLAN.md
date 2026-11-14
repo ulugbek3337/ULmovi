@@ -141,3 +141,18 @@ Har bir yangi topilma uchun quyidagilarni qayd et:
 8. Qolgan xavf yoki cheklov.
 
 **Keyingi ish:** A bo‘limidan — upload/storage xatolarida orphan fayllarni oldini olishdan boshlash.
+
+## 4. Login urinishlarini cheklash — 2026-11-14
+
+security-audit-fixes-2026-11 branchida qo‘shimcha himoya qo‘shildi:
+
+- Avvalgi email + IP juftligi limiti saqlandi.
+- Bitta email manzili bo‘yicha turli IP manzillaridan kelgan muvaffaqiyatsiz urinishlar ham hisoblanadi (asosiy limitning 2 baravari, ko‘pi bilan 200).
+- Bitta IP manzili bo‘yicha turli email manzillariga qilingan muvaffaqiyatsiz urinishlar ham hisoblanadi (asosiy limitning 10 baravari, ko‘pi bilan 1000).
+- Email, IP va email+IP so‘rovlari uchun alohida SQLite indekslari qo‘shildi.
+- tests/login_rate_limit_smoke.php orqali uchala limit va eskirgan urinishlar oynasi tekshiriladi.
+- GitHub Actions workflow’iga yangi smoke-test qo‘shildi.
+
+Cheklov: bu himoya ilova darajasidagi rate limit hisoblanadi. Juda katta hajmdagi so‘rovlar uchun hosting/WAF darajasida qo‘shimcha cheklovlar ham kerak. NAT ortidagi haqiqiy foydalanuvchilarni bloklamaslik uchun IP limiti email limitidan ancha yuqori qo‘yilgan.
+
+CI holati: yangi commit uchun GitHub Actions natijasi hali ko‘rinmadi; test muvaffaqiyati tasdiqlanmaguncha ushbu o‘zgarish production uchun tayyor deb hisoblanmaydi.
