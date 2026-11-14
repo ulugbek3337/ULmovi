@@ -217,6 +217,20 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .admin-panel { margin: 18px 0; }
 .ad-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
 .ad-form .submit-btn, .ad-form .form-message { align-self: center; }
+.social-links-manager { grid-column: 1 / -1; margin: 12px 0 18px; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface, rgba(255,255,255,.025)); }
+.social-links-manager .admin-subheader { align-items: center; gap: 14px; margin-bottom: 8px; }
+.social-links-manager h3 { margin: 0; }
+.social-links-manager > p { color: var(--muted, #a7a7a7); font-size: 13px; margin: 8px 0 14px; }
+.social-links-editor { display: grid; gap: 10px; }
+.social-link-row { display: grid; grid-template-columns: minmax(130px, .7fr) minmax(220px, 1.5fr) auto; align-items: center; gap: 10px; }
+.social-link-row input { width: 100%; min-width: 0; }
+.social-link-row .danger-action { white-space: nowrap; }
+@media (max-width: 640px) {
+    .social-links-manager { padding: 14px; }
+    .social-links-manager .admin-subheader { align-items: flex-start; flex-direction: column; }
+    .social-link-row { grid-template-columns: 1fr; gap: 8px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; }
+    .social-link-row .danger-action { justify-self: start; }
+}
 .ads-list { display: grid; gap: 10px; }
 .ad-item { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; }
 .ad-item > div { margin-left: auto; }
