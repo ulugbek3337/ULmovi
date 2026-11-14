@@ -20,6 +20,84 @@ document.addEventListener('DOMContentLoaded', async () => {
     const movieCount = document.getElementById('movieTableCount');
     const userSearch = document.getElementById('userTableSearch');
     const userCount = document.getElementById('userTableCount');
+    const topMoviesList = document.getElementById('topMoviesList');
+    const recentUsersList = document.getElementById('recentUsersList');
+    const refreshDashboardButton = document.getElementById('refreshDashboardBtn');
+
+    function renderTopMovies(movies) {
+        const ranked = [...movies]
+            .sort((a, b) => Number(b.views_count || 0) - Number(a.views_count || 0))
+            .slice(0, 5);
+        if (!ranked.length) {
+            const empty = document.createElement('p');
+            empty.className = 'insight-empty';
+            empty.textContent = 'Hozircha kino ma’lumoti mavjud emas.';
+            topMoviesList.replaceChildren(empty);
+            return;
+        }
+
+        const maxViews = Math.max(1, ...ranked.map((movie) => Number(movie.views_count || 0)));
+        const items = ranked.map((movie, index) => {
+            const item = document.createElement('div');
+            item.className = 'insight-item';
+            const details = document.createElement('div');
+            details.className = 'insight-item-details';
+            const name = document.createElement('strong');
+            name.textContent = movie.title || 'Nomsiz kino';
+            const meta = document.createElement('span');
+            meta.textContent = `${Number(movie.views_count || 0).toLocaleString('uz-UZ')} ta ko‘rish`;
+            details.append(name, meta);
+            const track = document.createElement('div');
+            track.className = 'insight-bar-track';
+            track.setAttribute('role', 'img');
+            track.setAttribute('aria-label', `${name.textContent}: ${meta.textContent}`);
+            const bar = document.createElement('span');
+            bar.className = 'insight-bar';
+            bar.style.width = `${Math.max(0, Number(movie.views_count || 0)) / maxViews * 100}%`;
+            track.append(bar);
+            const rank = document.createElement('span');
+            rank.className = 'insight-rank';
+            rank.textContent = String(index + 1).padStart(2, '0');
+            item.append(rank, details, track);
+            return item;
+        });
+        topMoviesList.replaceChildren(...items);
+    }
+
+    function renderRecentUsers(users) {
+        const recent = [...users]
+            .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+            .slice(0, 5);
+        if (!recent.length) {
+            const empty = document.createElement('p');
+            empty.className = 'insight-empty';
+            empty.textContent = 'Hozircha foydalanuvchilar mavjud emas.';
+            recentUsersList.replaceChildren(empty);
+            return;
+        }
+
+        const items = recent.map((user) => {
+            const item = document.createElement('div');
+            item.className = 'recent-user-item';
+            const avatar = document.createElement('span');
+            avatar.className = 'recent-user-avatar';
+            avatar.textContent = String(user.full_name || user.username || 'F').trim().slice(0, 1).toLocaleUpperCase('uz');
+            const details = document.createElement('div');
+            details.className = 'recent-user-details';
+            const name = document.createElement('strong');
+            name.textContent = user.full_name || user.username || 'Noma’lum foydalanuvchi';
+            const email = document.createElement('span');
+            email.textContent = user.email || '';
+            details.append(name, email);
+            const date = document.createElement('time');
+            date.className = 'recent-user-date';
+            date.textContent = user.created_at || 'Sana yo‘q';
+            if (user.created_at) date.dateTime = user.created_at;
+            item.append(avatar, details, date);
+            return item;
+        });
+        recentUsersList.replaceChildren(...items);
+    }
 
     function filterAdminTable(searchInput, tableBody, countElement, itemLabel) {
         const query = searchInput.value.trim().toLocaleLowerCase('uz');
@@ -156,6 +234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!result.data.length) {
             showEmpty(movieTable, 6, 'Hozircha kino yo‘q.');
             updateMovieTableView();
+            renderTopMovies([]);
             return;
         }
         const rows = result.data.map((movie) => {
@@ -187,6 +266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         movieTable.replaceChildren(...rows);
         updateMovieTableView();
+        renderTopMovies(result.data);
     }
 
     async function loadUsers() {
@@ -196,6 +276,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!users.length) {
             showEmpty(usersTable, 9, 'Foydalanuvchilar topilmadi.');
             updateUserTableView();
+            renderRecentUsers([]);
             return;
         }
         const rows = users.map((user) => {
@@ -251,6 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
         usersTable.replaceChildren(...rows);
         updateUserTableView();
+        renderRecentUsers(result.data);
     }
 
     async function loadRoleUsers() {
@@ -563,7 +645,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function refreshDashboard() {
-        await Promise.all([loadStats(), loadMovies()]);
+        await Promise.all([loadStats(), loadMovies(), loadUsers()]);
     }
 
     function formatBytes(bytes) {
@@ -789,6 +871,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 activateTab(link.dataset.target);
             }
         });
+    });
+    refreshDashboardButton.addEventListener('click', async () => {
+        refreshDashboardButton.disabled = true;
+        refreshDashboardButton.textContent = 'Yangilanmoqda...';
+        try {
+            await refreshDashboard();
+            showMessage('Boshqaruv ma’lumotlari yangilandi.', false);
+        } catch (error) {
+            showMessage(error.message || 'Boshqaruv ma’lumotlarini yangilab bo‘lmadi.');
+        } finally {
+            refreshDashboardButton.disabled = false;
+            refreshDashboardButton.textContent = 'Yangilash';
+        }
     });
     document.getElementById('openMovieModalBtn').addEventListener('click', () => openMovieForm());
     document.getElementById('closeModalBtn').addEventListener('click', () => modal.classList.remove('active'));
