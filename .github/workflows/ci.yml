@@ -30,6 +30,9 @@ jobs:
       - name: Test fresh and upgraded SQLite schema
         run: php tests/bootstrap_smoke.php
 
+      - name: Test login rate limits
+        run: php tests/login_rate_limit_smoke.php
+
       - name: Check JavaScript syntax
         run: |
           for file in public/js/*.js; do
