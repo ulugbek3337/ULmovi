@@ -29,15 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const cards = [...grid.querySelectorAll('.movie-card')];
         const years = [...new Set(cards.map(getYear).filter(Boolean))].sort((a,b) => b-a);
         const selectedYear = yearSelect.value;
-        if (yearSelect.dataset.ready !== '1') {
-            years.forEach((year) => {
-                const option = document.createElement('option');
-                option.value = String(year);
-                option.textContent = String(year);
-                yearSelect.append(option);
-            });
-            yearSelect.dataset.ready = '1';
-        }
+        years.forEach((year) => {
+            if ([...yearSelect.options].some((option) => option.value === String(year))) return;
+            const option = document.createElement('option');
+            option.value = String(year);
+            option.textContent = String(year);
+            yearSelect.append(option);
+        });
         cards.forEach((card) => {
             const yearMatch = !selectedYear || getYear(card) === Number(selectedYear);
             card.hidden = !yearMatch;
@@ -59,7 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sort === 'oldest') return getYear(a)-getYear(b);
             return getYear(b)-getYear(a);
         });
-        visible.forEach((card) => grid.append(card));
+        const currentOrder = [...grid.querySelectorAll('.movie-card')].filter((card) => !card.hidden);
+        if (visible.some((card, index) => card !== currentOrder[index])) {
+            visible.forEach((card) => grid.append(card));
+        }
     }
     yearSelect?.addEventListener('change', enhanceCards);
     sortSelect?.addEventListener('change', enhanceCards);
