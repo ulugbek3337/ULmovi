@@ -4,7 +4,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearSelect = document.getElementById('yearFilter');
     const sortSelect = document.getElementById('sortFilter');
     const grid = document.getElementById('moviesGrid');
-    if (!genreSelect || !grid) return;
+    const grids = ['moviesGrid', 'popularGrid', 'topRatedGrid', 'recommendedGrid']
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+    if (!genreSelect || !grid || !grids.length) return;
 
     chips.forEach((chip) => chip.addEventListener('click', () => {
         genreSelect.value = chip.dataset.genre || '';
@@ -26,8 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return match ? Number(match[0]) : 0;
     }
     function enhanceCards() {
+        const allCards = grids.flatMap((container) => [...container.querySelectorAll('.movie-card')]);
         const cards = [...grid.querySelectorAll('.movie-card')];
-        const years = [...new Set(cards.map(getYear).filter(Boolean))].sort((a,b) => b-a);
+        const years = [...new Set(allCards.map(getYear).filter(Boolean))].sort((a,b) => b-a);
         const selectedYear = yearSelect.value;
         years.forEach((year) => {
             if ([...yearSelect.options].some((option) => option.value === String(year))) return;
@@ -36,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = String(year);
             yearSelect.append(option);
         });
-        cards.forEach((card) => {
+        allCards.forEach((card) => {
             const yearMatch = !selectedYear || getYear(card) === Number(selectedYear);
             card.hidden = !yearMatch;
             const ratingRow = card.querySelector('.movie-rating-row');
@@ -71,6 +75,6 @@ document.addEventListener('DOMContentLoaded', () => {
     yearSelect?.addEventListener('change', enhanceCards);
     sortSelect?.addEventListener('change', enhanceCards);
     const observer = new MutationObserver(() => enhanceCards());
-    observer.observe(grid, { childList:true });
+    grids.forEach((container) => observer.observe(container, { childList:true }));
     enhanceCards();
 });
