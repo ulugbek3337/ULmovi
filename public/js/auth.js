@@ -53,7 +53,7 @@ function addNavigationLink(container, label, href, className = '') {
 function renderAuthenticationNavigation(user) {
     const mainNav = document.getElementById('mainNav');
     const navUserArea = document.getElementById('navUserArea');
-    const guestActions = document.querySelector('.hero-actions');
+    const guestActions = document.querySelector('.hero-auth-actions');
     window.currentUser = user || null;
     if (!mainNav || !navUserArea) {
         window.dispatchEvent(new CustomEvent('ulmovi:auth-changed', { detail: user || null }));
