@@ -100,6 +100,18 @@ const server = http.createServer((req, res) => {
     );
     if (brokenPosterSources) throw new Error('Posterless movies must not render visible empty image elements');
 
+    const homepageFont = await page.locator('body').evaluate((el) => getComputedStyle(el).fontFamily);
+    if (!homepageFont.includes('DM Sans')) throw new Error('Homepage typography must use the shared DM Sans font stack');
+    const nativeGenreFilter = await page.locator('#genreFilter').evaluate((el) => {
+      const style = getComputedStyle(el);
+      return { width: el.getBoundingClientRect().width, position: style.position, clip: style.clip };
+    });
+    if (nativeGenreFilter.width > 2 || nativeGenreFilter.position !== 'absolute') {
+      throw new Error('The legacy genre select must remain accessible to scripts but visually hidden behind the genre chips');
+    }
+    const filterLayout = await page.locator('.homepage-filters').evaluate((el) => getComputedStyle(el).display);
+    if (filterLayout !== 'grid') throw new Error('Homepage filter groups must use the separated grid layout');
+
     const sectionCount = await page.locator('.movies-section').count();
     if (sectionCount !== 4) throw new Error(`Expected four movie sections, got ${sectionCount}`);
     const desktopColumns = await page.locator('#moviesGrid').evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(' ').length);
