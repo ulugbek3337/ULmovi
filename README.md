@@ -20,6 +20,17 @@ Frontend npm paketlarini talab qilmaydi. SMTP orqali parol tiklash uchun Compose
 4. `C:\xampp\php\php.ini` faylida yuqoridagi kengaytmalar yoqilganini tekshiring. Video 8 MiB qismlarda yuboriladi; PHP’da 6 GB limit o‘rnatmang. `upload_max_filesize=16M` va `post_max_size=32M` yetarli. Sifat variantlari yoqilgan bo‘lsa `max_execution_time=3600` kabi 255 soniyadan katta qiymat kerak. O‘zgarishdan so‘ng Apache’ni qayta ishga tushiring.
 5. Sayt birinchi marta API'ga murojaat qilganda SQLite jadvallari migratsiyalar orqali yaratiladi.
 
+### Postersiz eski kinolar uchun birinchi kadr
+
+Yangi yuklanadigan videolarda poster yuklanmasa, server FFmpeg yordamida videoning boshidan JPEG muqova yaratishga urinadi. Avvaldan bazada turgan, posteri yo‘q kinolar uchun quyidagi skriptni **faqat Alwaysdata SSH yoki boshqa server terminalida** ishga tushiring. Skript web orqali chaqirilsa ishlamaydi:
+
+```bash
+cd ~/ULmovi
+php backend/generate_missing_posters.php 500
+```
+
+Skript eng ko‘pi bilan 500 ta posteri yo‘q videoni tekshiradi. Kerak bo‘lsa keyingi safar yana ishga tushirish mumkin. FFmpeg yo‘li admin sozlamasida yoki `ULMOVI_FFMPEG` muhit o‘zgaruvchisida sozlangan bo‘lishi kerak. FFmpeg kadr chiqara olmasa, kino uchun standart muqova ko‘rsatiladi.
+
 Tavsiya etilgan production sozlamasi: `ULMOVI_DB_PATH` ni web-root tashqarisidagi SQLite fayliga, `ULMOVI_STORAGE_PATH` ni web-root tashqarisidagi yoziladigan papkaga o‘rnating. Standart video saqlash joyi ham loyiha papkasidan tashqarida (`ULmovi-storage`) yaratiladi. `public/` ichidagi yo‘l saqlash joyi sifatida qabul qilinmaydi.
 
 ## Birinchi super adminni yaratish
