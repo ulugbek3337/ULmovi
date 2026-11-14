@@ -1580,7 +1580,7 @@ try {
                 $socialName = trim(is_string($item['name'] ?? null) ? $item['name'] : '');
                 $socialUrl = trim(is_string($item['url'] ?? null) ? $item['url'] : '');
                 if ($socialName === '' || mb_strlen($socialName) > 30
-                    || strlen($socialUrl) > 500 || !valid_https_url($socialUrl)) {
+                    || $socialUrl === '' || strlen($socialUrl) > 500 || !valid_https_url($socialUrl)) {
                     respond(['success' => false, 'error' => 'Har bir tarmoq uchun nom va to‘g‘ri HTTPS havola kiriting.'], 422);
                 }
                 $cleanSocialLinks[] = ['name' => $socialName, 'url' => $socialUrl];
