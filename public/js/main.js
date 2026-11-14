@@ -57,14 +57,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         posterWrap.className = 'movie-poster-wrap';
         const image = document.createElement('img');
         image.className = 'movie-poster';
-        image.src = posterUrl(movie);
+        const imageSource = posterUrl(movie);
         image.alt = `${movie.title} posteri`;
         image.loading = 'lazy';
-        image.addEventListener('error', () => {
+        if (imageSource) {
+            image.src = imageSource;
+            image.addEventListener('error', () => {
+                image.hidden = true;
+                posterWrap.classList.add('poster-placeholder');
+                posterWrap.dataset.initial = (movie.title || 'U').trim().slice(0, 1).toUpperCase();
+            }, { once: true });
+        } else {
             image.hidden = true;
             posterWrap.classList.add('poster-placeholder');
             posterWrap.dataset.initial = (movie.title || 'U').trim().slice(0, 1).toUpperCase();
-        }, { once: true });
+        }
         posterWrap.append(image);
         const play = document.createElement('button');
         play.className = 'poster-play';
