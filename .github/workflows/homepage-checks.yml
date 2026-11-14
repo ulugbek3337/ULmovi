@@ -2,9 +2,9 @@ name: Homepage checks
 
 on:
   push:
-    branches: [feature/homepage-redesign]
+    branches: [feature/homepage-redesign, feature/netflix-homepage-v2]
   pull_request:
-    branches: [main]
+    branches: [main, feature/homepage-redesign]
 
 jobs:
   frontend:

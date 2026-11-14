@@ -1,0 +1,41 @@
+/* ULmovi Netflix-inspired homepage v2 — additive overrides */
+:root{--bg:#080808;--surface:#171717;--surface-raised:#222;--surface-input:#111;--text:#f7f7f7;--muted:#aaa;--accent:#e50914;--accent-dark:#b20710;--border:rgba(255,255,255,.11);--radius:9px}
+body{background:#080808;color:#f5f5f5;font-family:Arial,Helvetica,sans-serif}
+.navbar{background:rgba(8,8,8,.96);border-bottom:1px solid rgba(255,255,255,.09)}
+.nav-container{max-width:1600px;min-height:72px;padding:10px 3.5%;gap:28px}
+.logo{font-size:29px;letter-spacing:-1.8px}.logo .logo-ul{color:#e50914}.logo .logo-movi{color:#fff}
+.main-nav{gap:clamp(12px,1.7vw,26px);flex:1}.main-nav a{font-size:13px;color:#ddd}.main-nav a:hover{color:#fff}
+.search-box{max-width:290px}.search-box input{background:#171717;border-color:#444;border-radius:999px;padding:11px 16px}
+.user-nav-area{gap:9px}.nav-auth-button{border-radius:999px;padding:9px 15px}.nav-auth-button.primary{background:#e50914;border-color:#e50914}
+.hero.netflix-hero{min-height:480px;align-items:center;background:#090909;isolation:isolate}
+.netflix-hero .hero-art{position:absolute;inset:0;z-index:-1;background-image:linear-gradient(90deg,#080808 0%,rgba(8,8,8,.94) 23%,rgba(8,8,8,.55) 52%,rgba(8,8,8,.12) 100%),linear-gradient(0deg,#080808 0%,transparent 34%),url('https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=2000&q=85');background-size:cover;background-position:center 44%;transform:scale(1.01)}
+.netflix-hero .hero-content{max-width:1600px;padding:72px 5.5% 84px}
+.hero-tags{display:flex;align-items:center;gap:9px;margin-bottom:20px}.hero-premiere,.hero-tag{display:inline-flex;align-items:center;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700}
+.hero-premiere{background:#e50914;color:#fff}.hero-tag{background:rgba(255,255,255,.12);color:#eee;border:1px solid rgba(255,255,255,.12)}
+.netflix-hero .eyebrow{color:#ff424b;font-size:12px;letter-spacing:.14em}
+.netflix-hero h1{max-width:650px;font-size:clamp(38px,5.3vw,66px);line-height:1.04;letter-spacing:-.045em}
+.netflix-hero h1 span{display:block;color:#e50914}
+.netflix-hero .hero-content>p:not(.eyebrow){max-width:520px;color:#e0e0e0;font-size:17px;line-height:1.65;text-shadow:0 2px 12px #000}
+.netflix-hero .hero-button{background:#e50914;border-radius:6px;padding:14px 23px;box-shadow:0 8px 24px rgba(229,9,20,.2)}
+.netflix-hero .hero-button:hover{background:#b20710}
+.netflix-hero .hero-button-outline{background:rgba(90,90,90,.62);border:1px solid rgba(255,255,255,.28);box-shadow:none}
+.hero-pagination{display:flex;gap:8px;margin-top:32px}.hero-pagination span{width:9px;height:9px;border-radius:50%;background:#777}.hero-pagination span.active{width:27px;border-radius:8px;background:#e50914}
+.main-content{max-width:1600px;padding:0 3.5% 64px}
+.instagram-promo{border-radius:10px}
+.homepage-filters{background:#111;border:1px solid var(--border);border-radius:10px;padding:18px;margin:12px 0 30px;align-items:center}
+.genre-chips{display:flex;flex-wrap:wrap;gap:8px}.genre-chip{border:1px solid #383838;background:#1b1b1b;color:#ddd;border-radius:999px;padding:8px 13px;cursor:pointer}.genre-chip.active,.genre-chip:hover{background:#e50914;border-color:#e50914;color:#fff}
+.filter-selects{display:flex;gap:12px;flex-wrap:wrap}.filters-bar select{background:#1b1b1b;border-color:#444;border-radius:7px}
+.movies-section{margin:0 0 42px}.section-heading{margin-bottom:15px;align-items:center}.section-heading h2{font-size:24px;letter-spacing:-.025em}.section-heading .eyebrow{margin-bottom:4px;color:#e50914}
+.section-side-note{color:#999;font-size:12px}
+.movies-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.movie-card{background:#141414;border:1px solid rgba(255,255,255,.08);border-radius:8px;box-shadow:0 5px 18px rgba(0,0,0,.18)}
+.movie-card:hover{transform:translateY(-5px) scale(1.015);border-color:rgba(229,9,20,.55);box-shadow:0 14px 30px rgba(0,0,0,.4)}
+.movie-poster-wrap{aspect-ratio:2/2.85;background:linear-gradient(145deg,#292929,#111)}
+.movie-card-body{padding:11px 12px}.movie-card h3{font-size:14px}.movie-meta{color:#aaa}
+.poster-play{background:#e50914}.movie-rating-badge{background:rgba(0,0,0,.78);color:#ffc83d;border-radius:5px;padding:5px 7px}
+.load-more-btn,.submit-btn{background:#e50914;border-color:#e50914}.load-more-btn:hover,.submit-btn:hover{background:#b20710}
+.site-footer{background:#080808;border-top:1px solid #222}
+@media(max-width:900px){.nav-container{flex-wrap:wrap;gap:12px;padding:12px 4%}.main-nav{order:3;width:100%;overflow-x:auto;padding:4px 0 8px}.search-box{max-width:none;flex:1}.hero.netflix-hero{min-height:420px}.netflix-hero .hero-content{padding:58px 6% 76px}.homepage-filters{align-items:stretch;flex-direction:column}.filter-selects{width:100%}.filter-select{flex:1}.filter-selects select{width:100%;min-width:0}}
+@media(max-width:800px){.movies-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.nav-container{min-height:unset}.logo{font-size:25px}.search-box{order:2;flex-basis:100%;max-width:none}.nav-right{margin-left:auto}.main-nav{gap:18px}.main-nav a{font-size:12px}.hero.netflix-hero{min-height:410px}.netflix-hero .hero-art{background-position:58% center;background-image:linear-gradient(90deg,rgba(8,8,8,.88),rgba(8,8,8,.48)),linear-gradient(0deg,#080808 0%,transparent 55%),url('https://images.unsplash.com/photo-1519608487953-e999c86e7455?auto=format&fit=crop&w=1000&q=80')}.netflix-hero .hero-content{padding:52px 5% 70px}.netflix-hero h1{font-size:39px}.netflix-hero .hero-content>p:not(.eyebrow){font-size:14px}.hero-actions{gap:9px}.hero-button{padding:12px 15px;font-size:13px}.main-content{padding-left:4%;padding-right:4%}.movies-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.section-heading h2{font-size:20px}.filter-selects{flex-direction:column}.genre-chips{gap:6px}.genre-chip{font-size:12px;padding:7px 10px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
