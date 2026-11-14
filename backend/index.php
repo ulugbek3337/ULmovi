@@ -1117,7 +1117,7 @@ try {
             $movieSelect = 'SELECT m.id, m.title, m.genre, m.year, m.rating, m.poster_url, m.description,
                 (m.video_path IS NOT NULL) AS has_video_file, (m.poster_path IS NOT NULL) AS has_poster,
                 m.views_count, m.downloads_count,
-                (SELECT GROUP_CONCAT(quality, "|") FROM movie_files WHERE movie_id = m.id) AS quality_list,
+                (SELECT GROUP_CONCAT(quality, char(124)) FROM movie_files WHERE movie_id = m.id) AS quality_list,
                 (SELECT AVG(score) FROM ratings WHERE movie_id = m.id) AS average_rating,
                 (SELECT COUNT(*) FROM ratings WHERE movie_id = m.id) AS rating_count';
             $statement = $pdo->prepare($movieSelect . ' FROM likes l JOIN movies m ON m.id = l.movie_id WHERE l.user_id = ? ORDER BY l.created_at DESC LIMIT 30');
