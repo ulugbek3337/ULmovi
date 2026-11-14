@@ -796,9 +796,10 @@ function store_movie_upload(PDO $pdo, int $movieId, array $upload): void
     $fileStatement->execute([$movieId, $quality, $stored['path'], $stored['mime'], $stored['size']]);
     $statement = $pdo->prepare('UPDATE movies SET video_path = ?, video_mime = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
     $statement->execute([$stored['path'], $stored['mime'], $movieId]);
-    $posterStatement = $pdo->prepare('SELECT poster_path FROM movies WHERE id = ?');
+    $posterStatement = $pdo->prepare('SELECT poster_path, poster_url FROM movies WHERE id = ?');
     $posterStatement->execute([$movieId]);
-    if (!$posterStatement->fetchColumn()) {
+    $existingPoster = $posterStatement->fetch();
+    if ($existingPoster && !$existingPoster['poster_path'] && trim((string)$existingPoster['poster_url']) === '') {
         $previewPath = generate_movie_preview_frame($pdo, $stored['absolute_path']);
         if ($previewPath !== null) {
             $pdo->prepare('UPDATE movies SET poster_path = ? WHERE id = ?')->execute([$previewPath, $movieId]);
