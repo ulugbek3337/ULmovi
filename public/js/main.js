@@ -566,6 +566,35 @@ document.addEventListener('DOMContentLoaded', async () => {
         videoContainer.replaceChildren();
     }
 
+    async function loadSocialLinks() {
+        const container = document.getElementById('footerSocialLinks');
+        if (!container) return;
+        try {
+            const result = await fetchAPI('get_social_links');
+            if (!result.success || !Array.isArray(result.data)) return;
+            const symbols = { telegram: '➤', instagram: '◎', youtube: '▶', tiktok: '♪', facebook: 'f', x: '𝕏' };
+            result.data.forEach((item) => {
+                if (!item || typeof item.name !== 'string' || typeof item.url !== 'string') return;
+                try {
+                    const destination = new URL(item.url);
+                    if (destination.protocol !== 'https:') return;
+                    const link = document.createElement('a');
+                    link.href = destination.href;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.setAttribute('aria-label', item.name);
+                    link.title = item.name;
+                    link.textContent = symbols[item.name.toLowerCase()] || item.name.trim().slice(0, 1).toUpperCase();
+                    container.append(link);
+                } catch {
+                    return;
+                }
+            });
+        } catch (error) {
+            console.error('Ijtimoiy tarmoq havolalari yuklanmadi:', error);
+        }
+    }
+
     async function loadAds(placement, container) {
         try {
             const result = await fetchAPI('get_ads', 'GET', { placement });
@@ -645,6 +674,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         await Promise.all([
             loadMovies(true),
+            loadSocialLinks(),
             loadAds('home', document.getElementById('homeAds')),
             loadAds('between_sections', document.getElementById('betweenAds')),
         ]);
