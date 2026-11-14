@@ -1,0 +1,27 @@
+name: Homepage checks
+
+on:
+  push:
+    branches: [feature/homepage-redesign]
+  pull_request:
+    branches: [main]
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check JavaScript syntax
+        run: |
+          node --check public/js/auth.js
+          node --check public/js/main.js
+          node --check public/js/homepage-ui.js
+      - name: Verify homepage hooks
+        run: |
+          grep -q 'id="moviesGrid"' public/index.html
+          grep -q 'id="yearFilter"' public/index.html
+          grep -q 'id="sortFilter"' public/index.html
+          grep -q 'js/homepage-ui.js' public/index.html
