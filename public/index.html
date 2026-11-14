@@ -8,54 +8,66 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <header class="navbar">
+        <header class="navbar">
         <div class="nav-container">
-            <a href="index.html" class="logo" aria-label="ULmovi bosh sahifa">UL<span>movi</span></a>
+            <a href="index.html" class="logo" aria-label="ULmovi bosh sahifa"><span class="logo-ul">UL</span><span class="logo-movi">movi</span></a>
             <nav id="mainNav" class="main-nav" aria-label="Asosiy navigatsiya"></nav>
             <div class="search-box">
                 <label class="sr-only" for="searchInput">Kino qidirish</label>
+                <span class="search-icon" aria-hidden="true">⌕</span>
                 <input type="search" id="searchInput" placeholder="Kino nomini qidiring..." autocomplete="off">
             </div>
-            <div class="nav-right">
-                <div id="navUserArea" class="user-nav-area"></div>
-            </div>
+            <div class="nav-right"><div id="navUserArea" class="user-nav-area"></div></div>
         </div>
     </header>
     <main>
-        <section class="hero">
+        <section class="hero" aria-label="ULmovi taqdimoti">
+            <div class="hero-art" aria-hidden="true"><span class="hero-orbit orbit-one"></span><span class="hero-orbit orbit-two"></span><span class="hero-light"></span></div>
             <div class="hero-content">
+                <span class="hero-premiere">✦ Premyera</span>
                 <p class="eyebrow">Kino olami — ULmovi</p>
                 <h1>Sevimli hikoyalaringizni <span>tomosha qiling</span></h1>
-                <p>Yangi filmlarni kashf eting, baho bering va taassurotlaringizni ulashing.</p>
+                <p>Eng sara filmlarni kashf eting. Sevimli hikoyalaringizni yuqori sifatda, istalgan qurilmada tomosha qiling.</p>
                 <div class="hero-actions">
-                    <a class="hero-button" href="#latest">Kinolarni ko‘rish <span aria-hidden="true">↓</span></a>
-                    <button class="hero-auth-button" type="button" data-auth-open="login">Kirish</button>
-                    <button class="hero-auth-button secondary" type="button" data-auth-open="register">Ro‘yxatdan o‘tish</button>
+                    <a class="hero-button" href="#latest"><span aria-hidden="true">▶</span> Ko‘rish</a>
+                    <a class="hero-button hero-button-outline" href="#popular">Ommabop kinolar <span aria-hidden="true">↗</span></a>
                 </div>
+                <div class="hero-pagination" aria-label="Banner sahifasi"><span class="active"></span><span></span><span></span></div>
             </div>
         </section>
         <div class="main-content">
             <section id="homeAds" class="ad-slot" aria-label="Reklama" hidden></section>
-            <section class="filters-bar" aria-label="Kino filtrlari">
-                <div>
-                    <label for="genreFilter">Janr</label>
-                    <select id="genreFilter">
-                        <option value="">Barcha janrlar</option>
-                        <option value="action">Jangari</option>
-                        <option value="comedy">Komediya</option>
-                        <option value="drama">Drama</option>
-                        <option value="thriller">Triller</option>
-                        <option value="animation">Animatsiya</option>
-                        <option value="documentary">Hujjatli</option>
-                        <option value="romance">Romantik</option>
-                        <option value="adventure">Sarguzasht</option>
-                        <option value="other">Boshqa</option>
+            <a class="instagram-promo" href="https://www.instagram.com/ulmovi/" target="_blank" rel="noopener noreferrer">
+                <span class="promo-phone" aria-hidden="true"><span class="phone-screen"><span class="phone-camera"></span><span class="phone-avatar">UL</span><span class="phone-lines"></span><span class="phone-grid"><i></i><i></i><i></i><i></i><i></i><i></i></span></span></span>
+                <span class="promo-copy"><span class="promo-kicker">Biz bilan yaqinroq bo‘ling</span><strong>Bizni Instagramda kuzatib boring!</strong><span class="promo-handle">@ulmovi</span></span>
+                <span class="promo-instagram" aria-hidden="true">◎</span>
+                <span class="promo-link">Kuzatish <span aria-hidden="true">↗</span></span>
+                <span class="promo-float promo-heart" aria-hidden="true">♥</span><span class="promo-float promo-bell" aria-hidden="true">♧</span>
+            </a>
+            <section class="filters-bar homepage-filters" aria-label="Kino filtrlari">
+                <div class="genre-filter-area">
+                    <span class="filter-caption">Janr bo‘yicha</span>
+                    <div class="genre-chips" role="group" aria-label="Janr tanlash">
+                        <button class="genre-chip active" type="button" data-genre="">Barcha janrlar</button>
+                        <button class="genre-chip" type="button" data-genre="action">Jangari</button>
+                        <button class="genre-chip" type="button" data-genre="comedy">Komediya</button>
+                        <button class="genre-chip" type="button" data-genre="drama">Drama</button>
+                        <button class="genre-chip" type="button" data-genre="thriller">Triller</button>
+                        <button class="genre-chip" type="button" data-genre="animation">Animatsiya</button>
+                    </div>
+                    <label class="sr-only" for="genreFilter">Janr</label>
+                    <select id="genreFilter" class="native-filter">
+                        <option value="">Barcha janrlar</option><option value="action">Jangari</option><option value="comedy">Komediya</option><option value="drama">Drama</option><option value="thriller">Triller</option><option value="animation">Animatsiya</option><option value="documentary">Hujjatli</option><option value="romance">Romantik</option><option value="adventure">Sarguzasht</option><option value="other">Boshqa</option>
                     </select>
+                </div>
+                <div class="filter-selects">
+                    <label class="filter-select"><span>Yil</span><select id="yearFilter" aria-label="Chiqqan yil"><option value="">Barcha yillar</option></select></label>
+                    <label class="filter-select"><span>Saralash</span><select id="sortFilter" aria-label="Kinolarni saralash"><option value="latest">Eng yangilari</option><option value="rating">Reyting bo‘yicha</option><option value="popular">Ommabopligi</option><option value="oldest">Eski kinolar</option></select></label>
                 </div>
                 <p id="movieStatus" class="section-note" role="status" aria-live="polite"></p>
             </section>
             <section id="latest" class="movies-section">
-                <div class="section-heading"><div><p class="eyebrow">Hozirgina qo‘shildi</p><h2>So‘nggi kinolar</h2></div></div>
+                <div class="section-heading"><div><p class="eyebrow">Hozirgina qo‘shildi</p><h2>So‘nggi kinolar</h2></div><span class="section-side-note">Yangi qo‘shilganlar</span></div>
                 <div id="moviesGrid" class="movies-grid"></div>
                 <button id="loadMoreBtn" class="load-more-btn" type="button" hidden>Yana kinolarni ko‘rish</button>
             </section>
@@ -74,6 +86,13 @@
             </section>
         </div>
     </main>
+    <footer id="about" class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-brand"><a href="index.html" class="logo"><span class="logo-ul">UL</span><span class="logo-movi">movi</span></a><p>Sizning sevimli kino portalingiz</p></div>
+            <div class="footer-social"><strong>Biz bilan bog‘lanish</strong><div><a href="https://t.me/ulmovi" target="_blank" rel="noopener noreferrer" aria-label="Telegram">➤</a><a href="https://www.instagram.com/ulmovi/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">◎</a></div></div>
+        </div>
+        <p class="footer-copyright">Copyright © 2026 - ULmovi</p>
+    </footer>
 
     <div id="playerModal" class="player-overlay" role="dialog" aria-modal="true" aria-label="Video pleer">
         <div class="player-box">
@@ -147,5 +166,6 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/homepage-ui.js"></script>
 </body>
 </html>
