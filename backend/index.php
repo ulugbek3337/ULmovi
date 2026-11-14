@@ -1084,9 +1084,7 @@ try {
             $attemptLimit = max(1, min(100, (int)system_setting($pdo, 'login_attempt_limit', '8')));
             $cutoff = time() - ($windowMinutes * 60);
             $pdo->prepare('DELETE FROM login_attempts WHERE attempted_at < ?')->execute([$cutoff]);
-            $statement = $pdo->prepare('SELECT COUNT(*) FROM login_attempts WHERE email = ? AND ip_address = ? AND attempted_at >= ?');
-            $statement->execute([$email, $ipAddress, $cutoff]);
-            if ((int)$statement->fetchColumn() >= $attemptLimit) {
+            if (login_attempts_blocked($pdo, $email, $ipAddress, $cutoff, $attemptLimit)) {
                 respond(['success' => false, 'error' => "Kirish urinishlari ko‘payib ketdi. {$windowMinutes} daqiqadan so‘ng urinib ko‘ring."], 429);
             }
             $statement = $pdo->prepare('SELECT id, password, status, session_version FROM users WHERE email = ?');
