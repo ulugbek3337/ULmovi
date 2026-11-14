@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let uploadBusy = false;
     let uploadFinalizing = false;
     const uploadStorageKey = 'ulmovi.pendingMovieUploads.v1';
-    const maxVideoUploadBytes = 6 * 1024 * 1024 * 1024;
+    const maxVideoUploadBytes = 256 * 1024 * 1024;
 
     function showMessage(message, isError = true) {
         status.textContent = message;
@@ -812,7 +812,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else {
                 const video = videoInput.files[0];
                 if (!video) throw new Error('MP4 yoki WebM video faylini tanlang.');
-                if (video.size > maxVideoUploadBytes) throw new Error('Video 6 GB chegarasidan katta. Kichikroq fayl tanlang.');
+                if (video.size > maxVideoUploadBytes) throw new Error('Serverdagi mahalliy video yuklash limiti 256 MB. Katta videolarni Google Drive orqali ulang.');
                 if (!crypto?.subtle) throw new Error('Brauzer xavfsiz ulanishni qo‘llamaydi. Lokalhost yoki HTTPS manzilidan foydalaning.');
                 const metadata = {
                     title: document.getElementById('movieTitle').value.trim(),
