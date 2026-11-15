@@ -13,8 +13,8 @@ require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPA
 try {
     $pdo = database();
     $version = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($version !== 7) {
-        throw new RuntimeException('Expected schema version 7, got ' . $version);
+    if ($version !== 8) {
+        throw new RuntimeException('Expected schema version 8, got ' . $version);
     }
     $table = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'registration_attempts'")->fetchColumn();
     if ($table !== 'registration_attempts') {
@@ -25,6 +25,15 @@ try {
     if ($jobsTable !== 'video_processing_jobs') {
         throw new RuntimeException('Video processing job queue table was not created.');
     }
+    $watchTable = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'watch_progress'")->fetchColumn();
+    if ($watchTable !== 'watch_progress') {
+        throw new RuntimeException('Watch progress table was not created.');
+    }
+    $watchIndex = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_watch_progress_user_updated'")->fetchColumn();
+    if ($watchIndex !== 'idx_watch_progress_user_updated') {
+        throw new RuntimeException('Watch progress index was not created.');
+    }
+
     $pdo->exec("INSERT INTO movies(title) VALUES ('CI queue smoke test')");
     $movieId = (int)$pdo->lastInsertId();
     $job = $pdo->prepare(
@@ -37,12 +46,62 @@ try {
         throw new RuntimeException('Video processing job could not be queued.');
     }
 
-    // Verify an existing v6 database can be upgraded idempotently to v7.
+    // Simulate a PR #1 v7 database: it has the video queue and registration
+    // throttle tables, but not PR #3's watch-progress table.
+    $pdo->exec('DROP TABLE watch_progress');
+    $pdo->exec('PRAGMA user_version = 7');
+    migrate_database($pdo);
+    $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
+    if ($upgradedVersion !== 8) {
+        throw new RuntimeException('Existing v7 database did not upgrade to v8.');
+    }
+    $watchTable = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'watch_progress'")->fetchColumn();
+    if ($watchTable !== 'watch_progress') {
+        throw new RuntimeException('v7 to v8 migration did not add watch progress.');
+    }
+
+    // Simulate a PR #3 v6 database: watch history exists, while security v7
+    // tables do not. Existing watch history must remain intact.
+    $pdo->exec("INSERT INTO users(name, email, password) VALUES ('Migration User', 'migration@example.test', 'hash')");
+    $userId = (int)$pdo->lastInsertId();
+    $pdo->exec("INSERT INTO movies(title) VALUES ('Migration Movie')");
+    $movieId = (int)$pdo->lastInsertId();
+    $pdo->prepare('INSERT INTO watch_progress(user_id, movie_id, position_seconds, duration_seconds) VALUES (?, ?, ?, ?)')
+        ->execute([$userId, $movieId, 123.5, 600.0]);
+    $pdo->exec('DROP TABLE video_processing_jobs');
+    $pdo->exec('DROP TABLE registration_attempts');
     $pdo->exec('PRAGMA user_version = 6');
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($upgradedVersion !== 7) {
-        throw new RuntimeException('Existing v6 database did not upgrade to v7.');
+    if ($upgradedVersion !== 8) {
+        throw new RuntimeException('Existing v6 database did not upgrade to v8.');
+    }
+    $savedPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
+    if ((float)$savedPosition !== 123.5) {
+        throw new RuntimeException('Existing watch history was not preserved during v6 to v8 migration.');
+    }
+    foreach (['video_processing_jobs', 'registration_attempts', 'watch_progress'] as $tableName) {
+        $exists = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = " . $pdo->quote($tableName))->fetchColumn();
+        if ($exists !== $tableName) {
+            throw new RuntimeException('Missing consolidated schema table: ' . $tableName);
+        }
+    }
+
+    // A v8 database remains stable on repeated migration.
+    migrate_database($pdo);
+    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 8) {
+        throw new RuntimeException('Repeated migration changed the v8 schema version.');
+    }
+
+    // A database created by a newer application must be rejected.
+    $pdo->exec('PRAGMA user_version = 9');
+    try {
+        migrate_database($pdo);
+        throw new RuntimeException('A newer database schema version was unexpectedly accepted.');
+    } catch (RuntimeException $exception) {
+        if (!str_contains($exception->getMessage(), 'ushbu ilova qo‘llaydigan migratsiya')) {
+            throw $exception;
+        }
     }
 
     fwrite(STDOUT, "ULmovi SQLite migration smoke test passed.\n");
