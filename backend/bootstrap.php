@@ -305,6 +305,7 @@ function migrate_database(PDO $pdo): void
         'ffprobe_path' => '',
         'login_attempt_limit' => '8',
         'login_window_minutes' => '15',
+        'social_links' => '[{"name":"Telegram","url":"https://t.me/ulmovi"},{"name":"Instagram","url":"https://www.instagram.com/ulmovi/"}]',
     ];
     $settingStatement = $pdo->prepare('INSERT OR IGNORE INTO system_settings(setting_key, setting_value) VALUES (?, ?)');
     foreach ($settingDefaults as $key => $value) {
