@@ -470,3 +470,23 @@ progress { width: 100%; height: 8px; accent-color: var(--accent); }
         overflow-wrap: anywhere;
     }
 }
+
+
+
+
+/* Super Admin social links editor */
+.social-links-manager { grid-column:1/-1; margin:12px 0 18px; padding:18px; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+.social-links-manager .admin-subheader { align-items:center; gap:14px; margin-bottom:8px; }
+.social-links-manager h3 { margin:0; }
+.social-links-manager > p { color:var(--muted); font-size:13px; margin:8px 0 14px; }
+.social-links-editor { display:grid; gap:10px; }
+.social-link-row { display:grid; grid-template-columns:minmax(130px,.7fr) minmax(220px,1.5fr) auto; align-items:center; gap:10px; }
+.social-link-row input { width:100%; min-width:0; }
+.social-link-row .danger-action { white-space:nowrap; }
+@media(max-width:760px) { .admin-charts-grid { grid-template-columns:1fr; } }
+@media(max-width:640px) {
+ .social-links-manager { padding:14px; }
+ .social-links-manager .admin-subheader { align-items:flex-start; flex-direction:column; }
+ .social-link-row { grid-template-columns:1fr; gap:8px; padding:12px; border:1px solid var(--border); border-radius:10px; }
+ .social-link-row .danger-action { justify-self:start; }
+}
