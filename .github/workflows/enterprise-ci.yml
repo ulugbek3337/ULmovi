@@ -1,0 +1,75 @@
+name: ULmovi Enterprise CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: enterprise-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP syntax (8.1–8.3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.1', '8.2', '8.3']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: pdo_sqlite, fileinfo, mbstring
+          coverage: none
+
+      - name: Lint PHP source
+        shell: bash
+        run: |
+          mapfile -d '' files < <(find . -path './.git' -prune -o -path './vendor' -prune -o -type f -name '*.php' -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No PHP files found."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
+            php -l "$file"
+          done
+
+      - name: Validate Composer manifest
+        run: composer validate --no-check-publish --no-check-lock
+
+  javascript:
+    name: JavaScript syntax
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check JavaScript source
+        shell: bash
+        run: |
+          mapfile -d '' files < <(find public/js -type f -name '*.js' -print0)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No frontend JavaScript files found."
+            exit 0
+          fi
+          for file in "${files[@]}"; do
+            node --check "$file"
+          done
