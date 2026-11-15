@@ -9,6 +9,7 @@ on:
   push:
     branches:
       - feature/admin-panel-upgrade
+      - feature/admin-dashboard-charts
 
 permissions:
   contents: read
