@@ -205,6 +205,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         table.replaceChildren(row);
     }
 
+    function renderMetricChart(containerId, metrics) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.replaceChildren();
+        const values = metrics.map((item) => Math.max(0, Number(item.value) || 0));
+        const maximum = Math.max(1, ...values);
+        metrics.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = 'chart-row';
+            const header = document.createElement('div');
+            header.className = 'chart-row-heading';
+            const label = document.createElement('span');
+            label.textContent = item.label;
+            const value = document.createElement('strong');
+            value.textContent = values[index].toLocaleString('uz-UZ');
+            const track = document.createElement('div');
+            track.className = 'chart-track';
+            track.setAttribute('aria-hidden', 'true');
+            const bar = document.createElement('span');
+            bar.className = 'chart-bar';
+            bar.style.width = `${values[index] === 0 ? 0 : Math.max(3, values[index] / maximum * 100)}%`;
+            track.append(bar);
+            header.append(label, value);
+            row.append(header, track);
+            container.append(row);
+        });
+    }
+
     async function loadStats() {
         const result = await fetchAPI('admin_stats');
         if (!result.success) throw new Error(result.error || 'Statistikani yuklab bo‘lmadi.');
@@ -226,6 +254,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.entries(mapping).forEach(([key, id]) => {
             document.getElementById(id).textContent = result.data[key] ?? 0;
         });
+        renderMetricChart('catalogChart', [
+            { label: 'Kinolar', value: result.data.total_movies },
+            { label: 'Foydalanuvchilar', value: result.data.total_users },
+        ]);
+        renderMetricChart('engagementChart', [
+            { label: 'Izohlar', value: result.data.total_comments },
+            { label: 'Yoqtirishlar', value: result.data.total_likes },
+        ]);
+        if (currentUser.role === 'super_admin') {
+            renderMetricChart('reachChart', [
+                { label: 'Ko‘rishlar', value: result.data.total_views },
+                { label: 'Yuklab olishlar', value: result.data.total_downloads },
+                { label: 'Reytinglar', value: result.data.total_ratings },
+            ]);
+        }
     }
 
     async function loadMovies() {
