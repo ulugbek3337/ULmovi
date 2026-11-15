@@ -33,6 +33,9 @@ jobs:
       - name: Test login rate limits
         run: php tests/login_rate_limit_smoke.php
 
+      - name: Test profile watch progress
+        run: php tests/profile_progress_smoke.php
+
       - name: Check JavaScript syntax
         run: |
           for file in public/js/*.js; do
