@@ -55,6 +55,20 @@
                     <div class="stat-card super-admin-only" hidden><h2>Reytinglar</h2><div class="value" id="statRatingsCount">0</div></div>
                     <div class="stat-card super-admin-only" hidden><h2>O‘rtacha baho</h2><div class="value" id="statAverageRating">0</div></div>
                 </div>
+                <div class="admin-charts-grid">
+                    <section class="admin-panel chart-panel" aria-labelledby="catalogChartTitle">
+                        <div class="chart-heading"><div><p class="eyebrow">Platforma tarkibi</p><h2 id="catalogChartTitle">Katalog va foydalanuvchilar</h2></div><span class="chart-caption">Jami</span></div>
+                        <div id="catalogChart" class="chart-bars" aria-label="Kino va foydalanuvchilar statistikasi"></div>
+                    </section>
+                    <section class="admin-panel chart-panel" aria-labelledby="engagementChartTitle">
+                        <div class="chart-heading"><div><p class="eyebrow">Hamjamiyat</p><h2 id="engagementChartTitle">Foydalanuvchi faolligi</h2></div><span class="chart-caption">Jami</span></div>
+                        <div id="engagementChart" class="chart-bars" aria-label="Izoh va yoqtirishlar statistikasi"></div>
+                    </section>
+                    <section class="admin-panel chart-panel super-admin-only" hidden aria-labelledby="reachChartTitle">
+                        <div class="chart-heading"><div><p class="eyebrow">Platforma ko‘rsatkichlari</p><h2 id="reachChartTitle">Ko‘rish va yuklab olishlar</h2></div><span class="chart-caption">Jami</span></div>
+                        <div id="reachChart" class="chart-bars" aria-label="Ko‘rishlar, yuklab olishlar va reytinglar statistikasi"></div>
+                    </section>
+                </div>
                 <div class="admin-insights-grid">
                     <section class="admin-panel insight-panel" aria-labelledby="topMoviesHeading">
                         <div class="insight-heading"><div><p class="eyebrow">Tomoshabinlar</p><h2 id="topMoviesHeading">Eng ko‘p ko‘rilgan kinolar</h2></div><span class="insight-caption">Ko‘rishlar soni</span></div>

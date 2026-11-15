@@ -4,9 +4,12 @@ on:
   pull_request:
     branches:
       - main
+      - feature/admin-panel-upgrade
+      - feature/admin-dashboard-charts
   push:
     branches:
       - feature/admin-panel-upgrade
+      - feature/admin-dashboard-charts
 
 permissions:
   contents: read
@@ -66,3 +69,6 @@ jobs:
           for file in "${files[@]}"; do
             node --check "$file"
           done
+
+      - name: Test admin dashboard charts
+        run: node tests/admin-dashboard-charts-smoke.cjs
