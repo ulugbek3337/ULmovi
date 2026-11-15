@@ -3,23 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ULmovi — Profil</title>
+    <meta name="theme-color" content="#080a10">
+    <title>ULmovi — Mening profilim</title>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/profile.css">
 </head>
-<body class="auth-page">
-    <main class="auth-card">
+<body class="profile-page">
+    <header class="profile-topbar">
         <a href="index.html" class="logo">UL<span>movi</span></a>
-        <h1>Profil sozlamalari</h1>
-        <p id="profileMessage" class="auth-message" role="status" aria-live="polite"></p>
-        <form id="profileForm">
-            <div class="form-group"><label for="profileName">Ism</label><input id="profileName" name="name" maxlength="100" autocomplete="name" required></div>
-            <div class="form-group"><label for="profileEmail">Email</label><input id="profileEmail" name="email" type="email" autocomplete="email" required></div>
-            <div class="form-group"><label for="currentPassword">Joriy parol (tasdiqlash uchun)</label><input id="currentPassword" name="current_password" type="password" autocomplete="current-password" required></div>
-            <div class="form-group"><label for="newPassword">Yangi parol (ixtiyoriy, kamida 8 belgi)</label><input id="newPassword" name="new_password" type="password" minlength="8" maxlength="200" autocomplete="new-password"></div>
-            <button type="submit" class="submit-btn">Saqlash</button>
-        </form>
-        <p><a href="index.html">Bosh sahifaga qaytish</a> · <button type="button" class="nav-logout-btn" data-logout>Chiqish</button></p>
+        <nav aria-label="Asosiy navigatsiya">
+            <a href="index.html">Bosh sahifa</a>
+            <button type="button" class="nav-logout-btn" data-logout>Chiqish</button>
+        </nav>
+    </header>
+
+    <main class="profile-shell">
+        <section class="profile-hero" aria-labelledby="profileTitle">
+            <div class="profile-orb profile-orb-one"></div>
+            <div class="profile-orb profile-orb-two"></div>
+            <div class="profile-hero-content">
+                <div class="profile-avatar" id="profileAvatar" aria-hidden="true">U</div>
+                <div class="profile-identity">
+                    <p class="eyebrow">SIZNING ULMOVI MAKONINGIZ</p>
+                    <h1 id="profileTitle">Profil</h1>
+                    <p id="profileEmail" class="profile-email">Ma’lumotlar yuklanmoqda…</p>
+                    <p id="profileJoined" class="profile-joined"></p>
+                </div>
+                <button type="button" class="profile-edit-trigger" id="editProfileButton">Profilni tahrirlash</button>
+            </div>
+        </section>
+
+        <p id="profileMessage" class="profile-message" role="status" aria-live="polite"></p>
+
+        <section class="profile-stats" aria-label="Profil statistikasi">
+            <article class="profile-stat-card">
+                <span class="profile-stat-icon">◷</span>
+                <strong id="watchedCount">—</strong>
+                <span>Ko‘rilgan kinolar</span>
+            </article>
+            <article class="profile-stat-card">
+                <span class="profile-stat-icon">♥</span>
+                <strong id="favoritesCount">—</strong>
+                <span>Sevimlilar</span>
+            </article>
+            <article class="profile-stat-card">
+                <span class="profile-stat-icon">✎</span>
+                <strong id="commentsCount">—</strong>
+                <span>Izohlar</span>
+            </article>
+        </section>
+
+        <section class="profile-section" id="continueSection">
+            <div class="profile-section-heading">
+                <div><p class="eyebrow">TOMOSHA QILISHNI DAVOM ETTIRING</p><h2>Davom ettirish</h2></div>
+                <span class="section-note">Oxirgi ko‘rilgan joyingizdan</span>
+            </div>
+            <div class="profile-movie-grid continue-grid" id="continueGrid">
+                <p class="profile-loading">Ma’lumotlar yuklanmoqda…</p>
+            </div>
+        </section>
+
+        <section class="profile-section">
+            <div class="profile-section-heading">
+                <div><p class="eyebrow">SIZ TANLAGAN KINOLAR</p><h2>Sevimlilar</h2></div>
+            </div>
+            <div class="profile-movie-grid" id="favoritesGrid">
+                <p class="profile-loading">Ma’lumotlar yuklanmoqda…</p>
+            </div>
+        </section>
+
+        <section class="profile-section">
+            <div class="profile-section-heading">
+                <div><p class="eyebrow">TOMOSHA FAOLIYATI</p><h2>Ko‘rish tarixi</h2></div>
+            </div>
+            <div class="profile-movie-grid" id="historyGrid">
+                <p class="profile-loading">Ma’lumotlar yuklanmoqda…</p>
+            </div>
+        </section>
+
+        <section class="profile-settings" id="profileSettings">
+            <div class="profile-section-heading">
+                <div><p class="eyebrow">HISOB BOSHQARUVI</p><h2>Profil va xavfsizlik</h2></div>
+            </div>
+            <form id="profileForm" class="profile-form" autocomplete="on">
+                <div class="profile-form-grid">
+                    <label class="profile-field">Ism
+                        <input id="profileName" name="name" maxlength="100" autocomplete="name" required>
+                    </label>
+                    <label class="profile-field">Email
+                        <input id="profileEmailInput" name="email" type="email" maxlength="254" autocomplete="email" required>
+                    </label>
+                    <label class="profile-field">Joriy parol (o‘zgarishlarni tasdiqlash uchun)
+                        <input id="currentPassword" name="current_password" type="password" autocomplete="current-password" required>
+                    </label>
+                    <label class="profile-field">Yangi parol (ixtiyoriy, kamida 8 belgi)
+                        <input id="newPassword" name="new_password" type="password" minlength="8" maxlength="200" autocomplete="new-password">
+                    </label>
+                </div>
+                <div class="profile-form-actions">
+                    <button type="submit" class="profile-save-button">O‘zgarishlarni saqlash</button>
+                    <button type="button" class="profile-cancel-button" id="cancelProfileEdit">Bekor qilish</button>
+                </div>
+            </form>
+            <p class="profile-security-note"><span aria-hidden="true">◈</span> Parolni yangilaganingizda hisobingizning boshqa faol sessiyalari bekor qilinadi.</p>
+        </section>
+        <footer class="profile-footer"><a href="index.html">← ULMOVI bosh sahifasi</a><span>Shaxsiy kino kutubxonangiz</span></footer>
     </main>
+
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/profile.js"></script>

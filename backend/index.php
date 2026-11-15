@@ -1158,10 +1158,98 @@ try {
             record_activity($pdo, $user['id'], 'profile_updated');
             respond(['success' => true, 'message' => 'Profil yangilandi.', 'csrf_token' => ensure_csrf_token()]);
 
+        case 'profile_dashboard':
+            require_method('GET');
+            $user = require_user($pdo);
+            $userId = (int)$user['id'];
+            $statement = $pdo->prepare(
+                'SELECT id, name, email, role, created_at,
+                    (SELECT COUNT(*) FROM likes WHERE user_id = users.id) AS favorites_count,
+                    (SELECT COUNT(*) FROM watch_progress WHERE user_id = users.id) AS watched_count,
+                    (SELECT COUNT(*) FROM comments WHERE user_id = users.id) AS comments_count
+                 FROM users WHERE id = ?'
+            );
+            $statement->execute([$userId]);
+            $profile = $statement->fetch();
+            if (!$profile) respond(['success' => false, 'error' => 'Profil topilmadi.'], 404);
+
+            $movieSelect = 'SELECT m.id, m.title, m.genre, m.year, m.rating, m.poster_url, m.description,
+                (m.video_path IS NOT NULL) AS has_video_file, (m.poster_path IS NOT NULL) AS has_poster,
+                m.views_count, m.downloads_count,
+                (SELECT GROUP_CONCAT(quality, char(124)) FROM movie_files WHERE movie_id = m.id) AS quality_list,
+                (SELECT AVG(score) FROM ratings WHERE movie_id = m.id) AS average_rating,
+                (SELECT COUNT(*) FROM ratings WHERE movie_id = m.id) AS rating_count';
+            $statement = $pdo->prepare($movieSelect . ' FROM likes l JOIN movies m ON m.id = l.movie_id WHERE l.user_id = ? ORDER BY l.created_at DESC LIMIT 30');
+            $statement->execute([$userId]);
+            $favorites = $statement->fetchAll();
+            $statement = $pdo->prepare($movieSelect . ', w.position_seconds, w.duration_seconds, w.updated_at AS watched_at
+                FROM watch_progress w JOIN movies m ON m.id = w.movie_id
+                WHERE w.user_id = ? ORDER BY w.updated_at DESC LIMIT 30');
+            $statement->execute([$userId]);
+            $history = $statement->fetchAll();
+            foreach ($favorites as &$movie) {
+                $movie['qualities'] = !empty($movie['quality_list']) ? explode('|', $movie['quality_list']) : [];
+                unset($movie['quality_list']);
+                $movie['has_poster'] = (bool)$movie['has_poster'];
+                $movie['has_video_file'] = (bool)$movie['has_video_file'];
+                $movie['resume_seconds'] = 0;
+                $movie['duration_seconds'] = 0;
+            }
+            unset($movie);
+            foreach ($history as &$movie) {
+                $movie['qualities'] = !empty($movie['quality_list']) ? explode('|', $movie['quality_list']) : [];
+                unset($movie['quality_list']);
+                $movie['has_poster'] = (bool)$movie['has_poster'];
+                $movie['has_video_file'] = (bool)$movie['has_video_file'];
+                $movie['resume_seconds'] = (float)$movie['position_seconds'];
+                $movie['duration_seconds'] = (float)$movie['duration_seconds'];
+            }
+            unset($movie);
+            $continueWatching = array_values(array_filter($history, static function (array $movie): bool {
+                return (float)$movie['duration_seconds'] > 0
+                    && (float)$movie['resume_seconds'] >= 10
+                    && (float)$movie['resume_seconds'] < ((float)$movie['duration_seconds'] - 30);
+            }));
+            respond(['success' => true, 'data' => [
+                'user' => $profile,
+                'stats' => [
+                    'favorites' => (int)$profile['favorites_count'],
+                    'watched' => (int)$profile['watched_count'],
+                    'comments' => (int)$profile['comments_count'],
+                ],
+                'favorites' => $favorites,
+                'history' => $history,
+                'continue_watching' => $continueWatching,
+            ]]);
+
+        case 'save_watch_progress':
+            require_method('POST');
+            $user = require_user($pdo);
+            $movieId = filter_var(post_string('movie_id'), FILTER_VALIDATE_INT);
+            $position = filter_var(post_string('position_seconds'), FILTER_VALIDATE_FLOAT);
+            $duration = filter_var(post_string('duration_seconds'), FILTER_VALIDATE_FLOAT);
+            if ($movieId === false || $movieId < 1 || $position === false || $duration === false
+                || !is_finite((float)$position) || !is_finite((float)$duration)
+                || $position < 0 || $duration < 0 || $duration > 604800 || $position > $duration + 1) {
+                respond(['success' => false, 'error' => 'Ko‘rish jarayoni ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            require_movie_exists($pdo, (int)$movieId);
+            $pdo->prepare(
+                'INSERT INTO watch_progress(user_id, movie_id, position_seconds, duration_seconds, updated_at)
+                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                 ON CONFLICT(user_id, movie_id) DO UPDATE SET
+                    position_seconds = excluded.position_seconds,
+                    duration_seconds = excluded.duration_seconds,
+                    updated_at = CURRENT_TIMESTAMP'
+            )->execute([$user['id'], $movieId, min((float)$position, (float)$duration), (float)$duration]);
+            respond(['success' => true]);
+
         case 'get_movies':
             require_method('GET');
             $query = trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : '');
             $genre = trim(is_string($_GET['genre'] ?? null) ? $_GET['genre'] : '');
+            $movieIdFilter = filter_var($_GET['movie_id'] ?? 0, FILTER_VALIDATE_INT);
+            $movieIdFilter = max(0, $movieIdFilter === false ? 0 : $movieIdFilter);
             $limit = filter_var($_GET['limit'] ?? 50, FILTER_VALIDATE_INT);
             $offset = filter_var($_GET['offset'] ?? 0, FILTER_VALIDATE_INT);
             $limit = max(1, min(100, $limit === false ? 50 : $limit));
@@ -1173,10 +1261,10 @@ try {
                     (SELECT COUNT(*) FROM ratings r WHERE r.movie_id = m.id) AS rating_count,
                     (SELECT AVG(score) FROM ratings r WHERE r.movie_id = m.id) AS average_rating
                     FROM movies m WHERE (? = \'\' OR m.title LIKE ? OR m.genre LIKE ?)
-                    AND (? = \'\' OR m.genre = ?) ORDER BY m.id DESC LIMIT ? OFFSET ?';
+                    AND (? = \'\' OR m.genre = ?) AND (? = 0 OR m.id = ?) ORDER BY m.id DESC LIMIT ? OFFSET ?';
             $statement = $pdo->prepare($sql);
             $likeQuery = '%' . $query . '%';
-            $statement->execute([$query, $likeQuery, $likeQuery, $genre, $genre, $limit, $offset]);
+            $statement->execute([$query, $likeQuery, $likeQuery, $genre, $genre, $movieIdFilter, $movieIdFilter, $limit, $offset]);
             $movies = $statement->fetchAll();
             $qualitiesByMovie = [];
             if ($movies) {
