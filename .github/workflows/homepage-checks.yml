@@ -35,6 +35,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Run responsive homepage browser tests
         run: node tests/homepage-browser-smoke.cjs
+      - name: Verify social links and dashboard charts
+        run: node tests/social-dashboard-smoke.cjs
       - name: Verify homepage hooks
         run: |
           grep -q 'id="moviesGrid"' public/index.html
