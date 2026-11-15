@@ -722,7 +722,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return { name: inputs[0].value.trim(), url: inputs[1].value.trim() };
         }).filter((item) => item.name || item.url);
     }
-    }
 
     async function loadActivityLogs() {
         const result = await fetchAPI('admin_activity_logs', 'GET', { limit: 100 });
