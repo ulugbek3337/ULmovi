@@ -101,6 +101,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         table.replaceChildren(row);
     }
 
+    function renderMetricChart(containerId, metrics) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.replaceChildren();
+        const values = metrics.map((item) => Math.max(0, Number(item.value) || 0));
+        const maximum = Math.max(1, ...values);
+        metrics.forEach((item, index) => {
+            const row = document.createElement('div');
+            row.className = 'chart-row';
+            const header = document.createElement('div');
+            header.className = 'chart-row-heading';
+            const label = document.createElement('span');
+            label.textContent = item.label;
+            const value = document.createElement('strong');
+            value.textContent = values[index].toLocaleString('uz-UZ');
+            const track = document.createElement('div');
+            track.className = 'chart-track';
+            track.setAttribute('aria-hidden', 'true');
+            const bar = document.createElement('span');
+            bar.className = 'chart-bar';
+            bar.style.width = `${values[index] === 0 ? 0 : Math.max(3, values[index] / maximum * 100)}%`;
+            track.append(bar);
+            header.append(label, value);
+            row.append(header, track);
+            container.append(row);
+        });
+    }
+
     async function loadStats() {
         const result = await fetchAPI('admin_stats');
         if (!result.success) throw new Error(result.error || 'Statistikani yuklab bo‘lmadi.');
@@ -122,6 +150,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         Object.entries(mapping).forEach(([key, id]) => {
             document.getElementById(id).textContent = result.data[key] ?? 0;
         });
+        renderMetricChart('catalogChart', [
+            { label: 'Kinolar', value: result.data.total_movies },
+            { label: 'Foydalanuvchilar', value: result.data.total_users },
+        ]);
+        renderMetricChart('engagementChart', [
+            { label: 'Izohlar', value: result.data.total_comments },
+            { label: 'Yoqtirishlar', value: result.data.total_likes },
+        ]);
+        if (currentUser.role === 'super_admin') {
+            renderMetricChart('reachChart', [
+                { label: 'Ko‘rishlar', value: result.data.total_views },
+                { label: 'Yuklab olishlar', value: result.data.total_downloads },
+                { label: 'Reytinglar', value: result.data.total_ratings },
+            ]);
+        }
     }
 
     async function loadMovies() {
@@ -508,6 +551,64 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('ffprobePath').value = settings.ffprobe_path || '';
         document.getElementById('loginAttemptLimit').value = settings.login_attempt_limit || '8';
         document.getElementById('loginWindowMinutes').value = settings.login_window_minutes || '15';
+        let socialLinks = [];
+        try {
+            socialLinks = JSON.parse(settings.social_links || '[]');
+            if (!Array.isArray(socialLinks)) socialLinks = [];
+        } catch {
+            socialLinks = [];
+        }
+        renderSocialLinks(socialLinks);
+    }
+
+    function renderSocialLinks(items = []) {
+        const editor = document.getElementById('socialLinksEditor');
+        if (!editor) return;
+        editor.replaceChildren();
+        items.slice(0, 12).forEach((item) => addSocialLinkRow(item));
+        document.getElementById('socialLinksJson').value = JSON.stringify(collectSocialLinks());
+    }
+
+    function addSocialLinkRow(item = {}) {
+        const editor = document.getElementById('socialLinksEditor');
+        if (!editor || editor.children.length >= 12) {
+            showMessage('Ko‘pi bilan 12 ta ijtimoiy tarmoq havolasi qo‘shish mumkin.');
+            return;
+        }
+        const row = document.createElement('div');
+        row.className = 'social-link-row';
+        const name = document.createElement('input');
+        name.type = 'text';
+        name.maxLength = 30;
+        name.placeholder = 'Tarmoq nomi (masalan, Instagram)';
+        name.setAttribute('aria-label', 'Ijtimoiy tarmoq nomi');
+        name.value = typeof item.name === 'string' ? item.name : '';
+        const url = document.createElement('input');
+        url.type = 'url';
+        url.maxLength = 500;
+        url.placeholder = 'https://...';
+        url.setAttribute('aria-label', 'Ijtimoiy tarmoq havolasi');
+        url.value = typeof item.url === 'string' ? item.url : '';
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'table-action danger-action';
+        remove.textContent = 'O‘chirish';
+        remove.addEventListener('click', () => {
+            row.remove();
+            document.getElementById('socialLinksJson').value = JSON.stringify(collectSocialLinks());
+        });
+        [name, url].forEach((input) => input.addEventListener('input', () => {
+            document.getElementById('socialLinksJson').value = JSON.stringify(collectSocialLinks());
+        }));
+        row.append(name, url, remove);
+        editor.append(row);
+    }
+
+    function collectSocialLinks() {
+        return Array.from(document.querySelectorAll('#socialLinksEditor .social-link-row')).map((row) => {
+            const inputs = row.querySelectorAll('input');
+            return { name: inputs[0].value.trim(), url: inputs[1].value.trim() };
+        }).filter((item) => item.name || item.url);
     }
 
     async function loadActivityLogs() {
@@ -884,6 +985,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             message.textContent = error.message || 'Admin hisobi yaratilmadi.';
         }
     });
+
+    document.getElementById('addSocialLinkBtn').addEventListener('click', () => addSocialLinkRow());
 
     document.getElementById('settingsForm').addEventListener('submit', async (event) => {
         event.preventDefault();
