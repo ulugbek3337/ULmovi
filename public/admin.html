@@ -51,6 +51,20 @@
                     <div class="stat-card super-admin-only" hidden><h2>Reytinglar</h2><div class="value" id="statRatingsCount">0</div></div>
                     <div class="stat-card super-admin-only" hidden><h2>O‘rtacha baho</h2><div class="value" id="statAverageRating">0</div></div>
                 </div>
+                <div class="admin-charts-grid">
+                    <section class="admin-panel chart-panel" aria-labelledby="catalogChartTitle">
+                        <div class="chart-heading"><div><p class="eyebrow">Platforma tarkibi</p><h2 id="catalogChartTitle">Katalog va foydalanuvchilar</h2></div><span class="chart-caption">Jami</span></div>
+                        <div id="catalogChart" class="chart-bars" aria-label="Kino va foydalanuvchilar statistikasi"></div>
+                    </section>
+                    <section class="admin-panel chart-panel" aria-labelledby="engagementChartTitle">
+                        <div class="chart-heading"><div><p class="eyebrow">Hamjamiyat</p><h2 id="engagementChartTitle">Foydalanuvchi faolligi</h2></div><span class="chart-caption">Jami</span></div>
+                        <div id="engagementChart" class="chart-bars" aria-label="Izoh va yoqtirishlar statistikasi"></div>
+                    </section>
+                    <section class="admin-panel chart-panel super-admin-only" hidden aria-labelledby="reachChartTitle">
+                        <div class="chart-heading"><div><p class="eyebrow">Platforma ko‘rsatkichlari</p><h2 id="reachChartTitle">Ko‘rish va yuklab olishlar</h2></div><span class="chart-caption">Jami</span></div>
+                        <div id="reachChart" class="chart-bars" aria-label="Ko‘rishlar, yuklab olishlar va reytinglar statistikasi"></div>
+                    </section>
+                </div>
             </section>
 
             <section id="moviesTab" class="tab-content">
@@ -135,6 +149,12 @@
                     <div class="form-group"><label for="ffprobePath">FFprobe dasturi yo‘li (ixtiyoriy)</label><input id="ffprobePath" name="ffprobe_path" maxlength="500" autocomplete="off"></div>
                     <div class="form-group"><label for="loginAttemptLimit">Kirish urinishlari limiti (1–100)</label><input id="loginAttemptLimit" name="login_attempt_limit" type="number" min="1" max="100" required></div>
                     <div class="form-group"><label for="loginWindowMinutes">Limit amal qilish vaqti, daqiqa (1–1440)</label><input id="loginWindowMinutes" name="login_window_minutes" type="number" min="1" max="1440" required></div>
+                    <div class="social-links-manager">
+                        <div class="admin-subheader"><div><p class="eyebrow">Sayt havolalari</p><h3>Ijtimoiy tarmoqlar</h3></div><button id="addSocialLinkBtn" class="secondary-btn" type="button">+ Havola qo‘shish</button></div>
+                        <p>Instagram, Telegram va boshqa sahifalar havolasini shu yerdan almashtiring. Faqat HTTPS manzillar qabul qilinadi.</p>
+                        <input type="hidden" id="socialLinksJson" name="social_links_json" value="[]">
+                        <div id="socialLinksEditor" class="social-links-editor"></div>
+                    </div>
                     <button class="submit-btn" type="submit">Sozlamalarni saqlash</button>
                     <p id="settingsMessage" class="form-message" role="status" aria-live="polite"></p>
                 </form>
