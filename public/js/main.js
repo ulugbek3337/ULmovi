@@ -565,6 +565,56 @@ document.addEventListener('DOMContentLoaded', async () => {
         videoContainer.replaceChildren();
     }
 
+    async function loadSocialLinks() {
+        const footer = document.getElementById('footerSocialLinks');
+        const promo = document.getElementById('instagramPromo');
+        try {
+            const result = await fetchAPI('get_social_links');
+            if (!result.success || !Array.isArray(result.data)) {
+                if (promo) promo.hidden = true;
+                return;
+            }
+            if (footer) footer.replaceChildren();
+            const symbols = { telegram: '➤', instagram: '◎', youtube: '▶', tiktok: '♪', facebook: 'f', x: '𝕏' };
+            let instagramUrl = '';
+            result.data.forEach((item) => {
+                if (!item || typeof item.name !== 'string' || typeof item.url !== 'string') return;
+                try {
+                    const destination = new URL(item.url);
+                    if (destination.protocol !== 'https:') return;
+                    if (item.name.trim().toLowerCase() === 'instagram') instagramUrl = destination.href;
+                    if (!footer) return;
+                    const link = document.createElement('a');
+                    link.href = destination.href;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.setAttribute('aria-label', item.name);
+                    link.title = item.name;
+                    link.textContent = symbols[item.name.trim().toLowerCase()] || item.name.trim().slice(0, 1).toUpperCase();
+                    footer.append(link);
+                } catch {
+                    return;
+                }
+            });
+            if (promo) {
+                if (instagramUrl) {
+                    promo.href = instagramUrl;
+                    promo.hidden = false;
+                    const handle = promo.querySelector('.promo-handle');
+                    if (handle) {
+                        const path = new URL(instagramUrl).pathname.split('/').filter(Boolean).pop();
+                        handle.textContent = path ? `@${path}` : 'Instagram';
+                    }
+                } else {
+                    promo.hidden = true;
+                }
+            }
+        } catch (error) {
+            if (promo) promo.hidden = true;
+            console.error('Ijtimoiy tarmoq havolalari yuklanmadi:', error);
+        }
+    }
+
     async function loadAds(placement, container) {
         try {
             const result = await fetchAPI('get_ads', 'GET', { placement });
@@ -646,6 +696,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadMovies(true),
             loadAds('home', document.getElementById('homeAds')),
             loadAds('between_sections', document.getElementById('betweenAds')),
+            loadSocialLinks(),
         ]);
         const params = new URLSearchParams(window.location.search);
         const requestedMovieId = Number(params.get('play') || 0);
