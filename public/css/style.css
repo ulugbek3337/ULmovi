@@ -32,7 +32,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .logo { color: #fff; text-decoration: none; font: 800 26px 'Manrope', sans-serif; letter-spacing: -1.5px; white-space: nowrap; }
 .logo span { color: var(--accent); }
-.eyebrow { color: var(--accent); font-size: 11px; font-weight: 700; letter-spacing: .16em; margin: 0 0 8px; text-transform: uppercase; }
+.eyebrow { color: #ff7078; font-size: 11px; font-weight: 700; letter-spacing: .16em; margin: 0 0 8px; text-transform: uppercase; }
 
 .navbar { position: sticky; inset: 0 0 auto; z-index: 20; background: rgba(8, 10, 16, .91); border-bottom: 1px solid var(--border); backdrop-filter: blur(18px); }
 .nav-container { max-width: 1440px; min-height: 76px; margin: 0 auto; padding: 12px 5vw; display: flex; align-items: center; gap: 30px; }
@@ -319,7 +319,7 @@ progress { width: 100%; height: 8px; accent-color: var(--accent); }
 .promo-phone { flex:0 0 82px; height:112px; display:grid; place-items:center; padding:5px; background:#17131e; border:2px solid rgba(255,255,255,.65); border-radius:16px; transform:rotate(-7deg); box-shadow:0 10px 26px rgba(0,0,0,.25); }
 .phone-screen { position:relative; display:flex; width:100%; height:100%; flex-direction:column; align-items:center; padding:13px 5px 5px; background:#fff; border-radius:10px; }
 .phone-camera { position:absolute; top:4px; width:20px; height:3px; background:#24202a; border-radius:8px; }
-.phone-avatar { display:grid; width:28px; height:28px; place-items:center; color:white; background:#e64f75; border-radius:50%; font-size:10px; font-weight:800; }
+.phone-avatar { display:grid; width:28px; height:28px; place-items:center; color:white; background:#9f244c; border-radius:50%; font-size:10px; font-weight:800; }
 .phone-lines { width:45px; height:4px; margin:5px 0; background:#ddd; border-radius:5px; }
 .phone-grid { display:grid; width:100%; grid-template-columns:repeat(3,1fr); gap:3px; }
 .phone-grid i { aspect-ratio:1; background:linear-gradient(135deg,#f9a35d,#9c3c91); }
@@ -372,7 +372,7 @@ progress { width: 100%; height: 8px; accent-color: var(--accent); }
 .footer-social > div { display:flex; gap:9px; }
 .footer-social a { display:grid; width:36px; height:36px; place-items:center; color:#fff; background:#171b25; border:1px solid rgba(255,255,255,.09); border-radius:50%; text-decoration:none; }
 .footer-social a:hover { background:#e04452; }
-.footer-copyright { margin:0; padding:16px 20px 20px; color:#6f7787; border-top:1px solid rgba(255,255,255,.055); text-align:center; font-size:11px; }
+.footer-copyright { margin:0; padding:16px 20px 20px; color:#a3a9b5; border-top:1px solid rgba(255,255,255,.055); text-align:center; font-size:11px; }
 @media(max-width:1100px) { .movies-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } .nav-container { gap:14px; } .main-nav { gap:12px; } }
 @media(max-width:800px) { .movies-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .instagram-promo { gap:18px; padding:20px; } .promo-instagram { display:none; } .main-nav { justify-content:flex-start; } }
 @media(max-width:620px) {
