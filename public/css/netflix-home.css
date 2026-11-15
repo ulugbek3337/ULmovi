@@ -12,7 +12,7 @@ body{background:#080808;color:#f5f5f5;font-family:Arial,Helvetica,sans-serif}
 .netflix-hero .hero-content{max-width:1600px;padding:72px 5.5% 84px}
 .hero-tags{display:flex;align-items:center;gap:9px;margin-bottom:20px}.hero-premiere,.hero-tag{display:inline-flex;align-items:center;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:700}
 .hero-premiere{background:#e50914;color:#fff}.hero-tag{background:rgba(255,255,255,.12);color:#eee;border:1px solid rgba(255,255,255,.12)}
-.netflix-hero .eyebrow{color:#ff424b;font-size:12px;letter-spacing:.14em}
+.netflix-hero .eyebrow{color:#ff7078;font-size:12px;letter-spacing:.14em}
 .netflix-hero h1{max-width:650px;font-size:clamp(38px,5.3vw,66px);line-height:1.04;letter-spacing:-.045em}
 .netflix-hero h1 span{display:block;color:#e50914}
 .netflix-hero .hero-content>p:not(.eyebrow){max-width:520px;color:#e0e0e0;font-size:17px;line-height:1.65;text-shadow:0 2px 12px #000}
@@ -25,7 +25,7 @@ body{background:#080808;color:#f5f5f5;font-family:Arial,Helvetica,sans-serif}
 .homepage-filters{background:#111;border:1px solid var(--border);border-radius:10px;padding:18px;margin:12px 0 30px;align-items:center}
 .genre-chips{display:flex;flex-wrap:wrap;gap:8px}.genre-chip{border:1px solid #383838;background:#1b1b1b;color:#ddd;border-radius:999px;padding:8px 13px;cursor:pointer}.genre-chip.active,.genre-chip:hover{background:#e50914;border-color:#e50914;color:#fff}
 .filter-selects{display:flex;gap:12px;flex-wrap:wrap}.filters-bar select{background:#1b1b1b;border-color:#444;border-radius:7px}
-.movies-section{margin:0 0 42px}.section-heading{margin-bottom:15px;align-items:center}.section-heading h2{font-size:24px;letter-spacing:-.025em}.section-heading .eyebrow{margin-bottom:4px;color:#e50914}
+.movies-section{margin:0 0 42px}.section-heading{margin-bottom:15px;align-items:center}.section-heading h2{font-size:24px;letter-spacing:-.025em}.section-heading .eyebrow{margin-bottom:4px;color:#ff7078}
 .section-side-note{color:#999;font-size:12px}
 .movies-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
 .movie-card{background:#141414;border:1px solid rgba(255,255,255,.08);border-radius:8px;box-shadow:0 5px 18px rgba(0,0,0,.18)}

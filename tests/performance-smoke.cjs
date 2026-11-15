@@ -25,5 +25,11 @@ assert.match(mainJs, /image\.height = 600/);
 assert.match(htaccess, /max-age=3600/);
 assert.match(htaccess, /max-age=2592000/);
 assert.match(htaccess, /no-cache, must-revalidate/);
+assert.match(html, /name="description" content="ULmovi/);
+assert.match(html, /class="hero-pagination" aria-hidden="true"/);
+assert.match(mainJs, /image\.width = 400/);
+assert.match(mainJs, /image\.height = 600/);
+const backend = fs.readFileSync('backend/index.php', 'utf8');
+assert.match(backend, /Cache-Control: public, max-age=3600, stale-while-revalidate=86400/);
 
 console.log('Performance smoke test passed.');
