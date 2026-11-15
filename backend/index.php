@@ -909,6 +909,7 @@ try {
         if (!in_array($mime, ['image/jpeg', 'image/png', 'image/webp'], true)) {
             respond(['success' => false, 'error' => 'Poster formati noto‘g‘ri.'], 404);
         }
+        header('Cache-Control: public, max-age=3600, stale-while-revalidate=86400');
         stream_file($path, $mime);
     }
 
