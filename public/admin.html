@@ -38,6 +38,10 @@
             <p id="adminStatus" class="form-message" role="status" aria-live="polite"></p>
 
             <section id="dashboardTab" class="tab-content active">
+                <div class="admin-dashboard-heading">
+                    <div><p class="eyebrow">Umumiy ko‘rsatkichlar</p><h2>Boshqaruv markazi</h2><p class="dashboard-subtitle">Platformaning asosiy holati va so‘nggi faolligi.</p></div>
+                    <button id="refreshDashboardBtn" class="secondary-btn" type="button">Yangilash</button>
+                </div>
                 <div class="stat-cards">
                     <div class="stat-card"><h2>Kinolar</h2><div class="value" id="statMoviesCount">0</div></div>
                     <div class="stat-card"><h2>Foydalanuvchilar</h2><div class="value" id="statUsersCount">0</div></div>
@@ -51,10 +55,25 @@
                     <div class="stat-card super-admin-only" hidden><h2>Reytinglar</h2><div class="value" id="statRatingsCount">0</div></div>
                     <div class="stat-card super-admin-only" hidden><h2>O‘rtacha baho</h2><div class="value" id="statAverageRating">0</div></div>
                 </div>
+                <div class="admin-insights-grid">
+                    <section class="admin-panel insight-panel" aria-labelledby="topMoviesHeading">
+                        <div class="insight-heading"><div><p class="eyebrow">Tomoshabinlar</p><h2 id="topMoviesHeading">Eng ko‘p ko‘rilgan kinolar</h2></div><span class="insight-caption">Ko‘rishlar soni</span></div>
+                        <div id="topMoviesList" class="insight-list" aria-live="polite"><p class="insight-empty">Ma’lumot yuklanmoqda...</p></div>
+                    </section>
+                    <section class="admin-panel insight-panel" aria-labelledby="recentUsersHeading">
+                        <div class="insight-heading"><div><p class="eyebrow">Yangi hisoblar</p><h2 id="recentUsersHeading">So‘nggi foydalanuvchilar</h2></div><span class="insight-caption">Oxirgi 5 ta</span></div>
+                        <div id="recentUsersList" class="insight-list" aria-live="polite"><p class="insight-empty">Ma’lumot yuklanmoqda...</p></div>
+                    </section>
+                </div>
+                <p class="dashboard-data-note">Ko‘rishlar bo‘yicha reyting mavjud jamlangan hisoblagichdan tuziladi. Kunlik va oylik grafik uchun alohida vaqt belgili ko‘rishlar tarixi kerak bo‘ladi.</p>
             </section>
 
             <section id="moviesTab" class="tab-content">
                 <div class="admin-subheader"><div><p class="eyebrow">Katalog</p><h2>Kinolarni boshqarish</h2></div><button id="openMovieModalBtn" class="submit-btn" type="button">+ Kino qo‘shish</button></div>
+                <div class="admin-table-tools">
+                    <label class="admin-search-field" for="movieTableSearch">Kinolarni qidirish<input id="movieTableSearch" type="search" autocomplete="off" placeholder="Kino nomi, janr yoki yil..."></label>
+                    <span id="movieTableCount" class="admin-table-count" aria-live="polite">0 ta kino</span>
+                </div>
                 <div class="table-wrap">
                     <table class="admin-table">
                         <thead><tr><th>ID</th><th>Nomi</th><th>Janr</th><th>Yil</th><th>Sifatlar</th><th>Amallar</th></tr></thead>
@@ -65,6 +84,10 @@
 
             <section id="usersTab" class="tab-content">
                 <p class="eyebrow">Hisoblar</p><h2>Oddiy foydalanuvchilar</h2>
+                <div class="admin-table-tools">
+                    <label class="admin-search-field" for="userTableSearch">Foydalanuvchilarni qidirish<input id="userTableSearch" type="search" autocomplete="off" placeholder="Ism, username yoki email..."></label>
+                    <span id="userTableCount" class="admin-table-count" aria-live="polite">0 ta foydalanuvchi</span>
+                </div>
                 <div class="table-wrap">
                     <table class="admin-table">
                         <thead><tr><th>ID</th><th>Foydalanuvchi nomi</th><th>To‘liq ism</th><th>Email</th><th>Rol</th><th>Holat</th><th>Ro‘yxatdan o‘tgan</th><th>Oxirgi kirish</th><th>Amallar</th></tr></thead>

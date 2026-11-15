@@ -199,6 +199,35 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 .admin-subheader { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin: 16px 0; }
 .admin-subheader h2 { margin: 0; }
 .table-wrap { width: 100%; margin: 16px 0; overflow-x: auto; border: 1px solid var(--border); border-radius: 11px; }
+.admin-table-tools { display: flex; align-items: end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 16px 0 10px; }
+.admin-search-field { display: grid; gap: 7px; width: min(420px, 100%); color: var(--muted); font-size: 12px; font-weight: 600; }
+.admin-search-field input { width: 100%; min-height: 42px; padding: 10px 12px; color: var(--text); background: var(--surface-input); border: 1px solid var(--border); border-radius: 8px; }
+.admin-search-field input:focus { border-color: rgba(240, 68, 82, .7); outline: 2px solid rgba(240, 68, 82, .14); }
+.admin-table-count { padding: 9px 0; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.admin-dashboard-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 8px 0 12px; }
+.admin-dashboard-heading h2 { margin: 0; }
+.dashboard-subtitle { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.admin-insights-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.insight-panel { min-width: 0; margin: 0; }
+.insight-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.insight-heading h2 { margin: 0; font-size: 17px; }
+.insight-heading .eyebrow { margin: 0 0 5px; }
+.insight-caption { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.insight-list { display: grid; gap: 13px; }
+.insight-empty { margin: 0; color: var(--muted); font-size: 13px; }
+.insight-item { display: grid; grid-template-columns: 26px minmax(0, 1fr); align-items: center; gap: 7px 10px; }
+.insight-rank { color: var(--muted); font: 700 12px 'Manrope', sans-serif; }
+.insight-item-details, .recent-user-details { display: grid; min-width: 0; gap: 3px; }
+.insight-item-details strong, .recent-user-details strong { overflow: hidden; color: var(--text); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.insight-item-details span, .recent-user-details span { overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.insight-bar-track { grid-column: 2; height: 6px; overflow: hidden; background: var(--surface-raised); border-radius: 99px; }
+.insight-bar { display: block; height: 100%; background: var(--accent); border-radius: inherit; transition: width .2s ease; }
+.recent-user-item { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.recent-user-avatar { display: grid; flex: 0 0 34px; width: 34px; height: 34px; place-items: center; color: #fff; background: var(--surface-raised); border: 1px solid var(--border); border-radius: 50%; font-size: 13px; font-weight: 700; }
+.recent-user-details { flex: 1; }
+.recent-user-date { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.dashboard-data-note { margin: 12px 2px 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.admin-table tr[hidden] { display: none; }
 .admin-table { width: 100%; border-collapse: collapse; }
 .admin-table th, .admin-table td { min-width: 90px; padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; font-size: 12px; }
 .admin-table th { color: var(--muted); background: rgba(255,255,255,.025); font-weight: 600; }
@@ -277,6 +306,10 @@ progress { width: 100%; height: 8px; accent-color: var(--accent); }
     .admin-header { align-items: flex-start; flex-direction: column; }
     .admin-subheader { align-items: flex-start; flex-direction: column; }
     .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .admin-dashboard-heading { align-items: flex-start; flex-direction: column; }
+    .admin-insights-grid { grid-template-columns: 1fr; }
+    .insight-heading { flex-wrap: wrap; }
+    .recent-user-date { font-size: 9px; }
     .ad-form { grid-template-columns: 1fr; }
     .ad-item > div { flex-basis: 100%; margin-left: 0; }
 }
