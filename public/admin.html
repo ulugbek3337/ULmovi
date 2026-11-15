@@ -135,6 +135,12 @@
                     <div class="form-group"><label for="ffprobePath">FFprobe dasturi yo‘li (ixtiyoriy)</label><input id="ffprobePath" name="ffprobe_path" maxlength="500" autocomplete="off"></div>
                     <div class="form-group"><label for="loginAttemptLimit">Kirish urinishlari limiti (1–100)</label><input id="loginAttemptLimit" name="login_attempt_limit" type="number" min="1" max="100" required></div>
                     <div class="form-group"><label for="loginWindowMinutes">Limit amal qilish vaqti, daqiqa (1–1440)</label><input id="loginWindowMinutes" name="login_window_minutes" type="number" min="1" max="1440" required></div>
+                    <div class="social-links-manager">
+                        <div class="admin-subheader"><div><p class="eyebrow">Sayt havolalari</p><h3>Ijtimoiy tarmoqlar</h3></div><button id="addSocialLinkBtn" class="secondary-btn" type="button">+ Havola qo‘shish</button></div>
+                        <p>Instagram, Telegram va boshqa sahifalar havolasini shu yerdan almashtiring. Faqat HTTPS manzillar qabul qilinadi.</p>
+                        <input type="hidden" id="socialLinksJson" name="social_links_json" value="[]">
+                        <div id="socialLinksEditor" class="social-links-editor"></div>
+                    </div>
                     <button class="submit-btn" type="submit">Sozlamalarni saqlash</button>
                     <p id="settingsMessage" class="form-message" role="status" aria-live="polite"></p>
                 </form>
