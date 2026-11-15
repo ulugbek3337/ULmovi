@@ -722,65 +722,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return { name: inputs[0].value.trim(), url: inputs[1].value.trim() };
         }).filter((item) => item.name || item.url);
     }
-        let socialLinks = [];
-        try {
-            socialLinks = JSON.parse(settings.social_links || '[]');
-            if (!Array.isArray(socialLinks)) socialLinks = [];
-        } catch {
-            socialLinks = [];
-        }
-        renderSocialLinks(socialLinks);
-    }
-
-    function renderSocialLinks(items = []) {
-        const editor = document.getElementById('socialLinksEditor');
-        if (!editor) return;
-        editor.replaceChildren();
-        items.slice(0, 12).forEach((item) => addSocialLinkRow(item));
-        document.getElementById('socialLinksJson').value = JSON.stringify(collectSocialLinks());
-    }
-
-    function addSocialLinkRow(item = {}) {
-        const editor = document.getElementById('socialLinksEditor');
-        if (!editor || editor.children.length >= 12) {
-            showMessage('Ko‘pi bilan 12 ta ijtimoiy tarmoq havolasi qo‘shish mumkin.');
-            return;
-        }
-        const row = document.createElement('div');
-        row.className = 'social-link-row';
-        const name = document.createElement('input');
-        name.type = 'text';
-        name.maxLength = 30;
-        name.placeholder = 'Tarmoq nomi (masalan, Instagram)';
-        name.setAttribute('aria-label', 'Ijtimoiy tarmoq nomi');
-        name.value = typeof item.name === 'string' ? item.name : '';
-        const url = document.createElement('input');
-        url.type = 'url';
-        url.maxLength = 500;
-        url.placeholder = 'https://...';
-        url.setAttribute('aria-label', 'Ijtimoiy tarmoq havolasi');
-        url.value = typeof item.url === 'string' ? item.url : '';
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.className = 'table-action danger-action';
-        remove.textContent = 'O‘chirish';
-        remove.addEventListener('click', () => {
-            row.remove();
-            document.getElementById('socialLinksJson').value = JSON.stringify(collectSocialLinks());
-        });
-        [name, url].forEach((input) => input.addEventListener('input', () => {
-            document.getElementById('socialLinksJson').value = JSON.stringify(collectSocialLinks());
-        }));
-        row.append(name, url, remove);
-        editor.append(row);
-    }
-
-    function collectSocialLinks() {
-        return Array.from(document.querySelectorAll('#socialLinksEditor .social-link-row')).map((row) => {
-            const inputs = row.querySelectorAll('input');
-            return { name: inputs[0].value.trim(), url: inputs[1].value.trim() };
-        }).filter((item) => item.name || item.url);
-    }
     }
 
     async function loadActivityLogs() {
@@ -1173,14 +1114,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('addSocialLinkBtn').addEventListener('click', () => addSocialLinkRow());
 
-    document.getElementById('addSocialLinkBtn').addEventListener('click', () => addSocialLinkRow());
-
     document.getElementById('settingsForm').addEventListener('submit', async (event) => {
         event.preventDefault();
         const message = document.getElementById('settingsMessage');
         if (!window.confirm('Global sozlamalarni yangilashni tasdiqlaysizmi? Ayrim o‘zgarishlar foydalanuvchilarga darhol ta’sir qiladi.')) return;
         const values = Object.fromEntries(new FormData(event.currentTarget));
-        values.social_links_json = JSON.stringify(collectSocialLinks());
         values.social_links_json = JSON.stringify(collectSocialLinks());
         try {
             const result = await fetchAPI('admin_save_settings', 'POST', values);
