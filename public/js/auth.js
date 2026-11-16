@@ -64,7 +64,10 @@ function renderAuthenticationNavigation(user) {
 
     addNavigationLink(mainNav, 'Bosh sahifa', 'index.html');
     addNavigationLink(mainNav, 'Kinolar', '#latest');
+    addNavigationLink(mainNav, 'Ommabop', '#popular');
     addNavigationLink(mainNav, 'Janrlar', '#genreFilter');
+    addNavigationLink(mainNav, 'Tavsiyalar', '#featuredHero');
+    addNavigationLink(mainNav, 'Biz haqimizda', '#about');
 
     if (!user) {
         const login = document.createElement('button');
