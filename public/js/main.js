@@ -150,7 +150,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const skeleton = document.createElement('div');
             skeleton.className = 'movie-skeleton';
             skeleton.setAttribute('aria-hidden', 'true');
-            skeleton.innerHTML = '<span class="skeleton-poster"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span>';
+            const poster = document.createElement('span'); poster.className = 'skeleton-poster';
+            const title = document.createElement('span'); title.className = 'skeleton-line';
+            const meta = document.createElement('span'); meta.className = 'skeleton-line short';
+            skeleton.append(poster, title, meta);
             grid.append(skeleton);
         }
     }
