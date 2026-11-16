@@ -346,138 +346,183 @@ document.addEventListener('DOMContentLoaded', async () => {
     function showDetails(movie) {
         activeMovie = movie;
         detailContent.replaceChildren();
-        const heading = document.createElement('div');
-        heading.className = 'detail-heading';
-        const image = document.createElement('img');
-        image.src = posterUrl(movie);
-        image.alt = `${movie.title} posteri`;
-        image.width = 400;
-        image.height = 600;
-        image.decoding = 'async';
-        const info = document.createElement('div');
-        const genre = document.createElement('p');
-        genre.className = 'eyebrow';
-        genre.textContent = `${genreLabel(movie.genre)} · ${movie.year || ''}`;
-        const title = document.createElement('h2');
-        title.id = 'detailTitle';
-        title.textContent = movie.title;
+        const layout = document.createElement('div');
+        layout.className = 'movie-detail-layout';
+        const main = document.createElement('div');
+        main.className = 'movie-detail-main';
+        const breadcrumb = document.createElement('nav');
+        breadcrumb.className = 'detail-breadcrumb';
+        breadcrumb.setAttribute('aria-label', 'Sahifa yo‘li');
+        const homeLink = document.createElement('a'); homeLink.href = 'index.html'; homeLink.textContent = 'Bosh sahifa';
+        const moviesLink = document.createElement('a'); moviesLink.href = '#latest'; moviesLink.textContent = 'Kinolar';
+        const crumbTitle = document.createElement('span'); crumbTitle.textContent = movie.title || 'Kino';
+        breadcrumb.append(homeLink, document.createTextNode(' / '), moviesLink, document.createTextNode(' / '), crumbTitle);
+
+        const preview = document.createElement('div');
+        preview.className = 'detail-player-preview';
+        const previewImage = document.createElement('img');
+        previewImage.alt = (movie.title || 'Kino') + ' posteri';
+        previewImage.width = 1280; previewImage.height = 720; previewImage.loading = 'eager';
+        const source = posterUrl(movie);
+        if (source) previewImage.src = source; else preview.classList.add('without-poster');
+        const previewFallback = document.createElement('span');
+        previewFallback.className = 'detail-preview-fallback';
+        previewFallback.textContent = (movie.title || 'U').trim().slice(0, 1).toUpperCase();
+        if (!source) previewFallback.hidden = false; else previewFallback.hidden = true;
+        previewImage.addEventListener('error', () => { previewImage.hidden = true; preview.classList.add('without-poster'); previewFallback.hidden = false; }, { once: true });
+        const play = document.createElement('button');
+        play.type = 'button';
+        play.className = 'detail-play-button';
+        play.setAttribute('aria-label', (movie.title || 'Kino') + ' filmini tomosha qilish');
+        play.textContent = '▶';
+        play.disabled = !movie.qualities?.length && !movie.video_url;
+        play.addEventListener('click', () => openPlayer(movie));
+        preview.append(previewImage, previewFallback, play);
+
+        const heading = document.createElement('div'); heading.className = 'detail-title-block';
+        const title = document.createElement('h1'); title.id = 'detailTitle'; title.textContent = movie.title || 'Nomsiz kino';
+        const meta = document.createElement('p'); meta.className = 'detail-meta';
+        const metaParts = [];
+        if (Number(movie.rating_count) > 0) metaParts.push('★ ' + Number(movie.average_rating || movie.rating).toFixed(1) + ' (' + Number(movie.rating_count) + ' ta baho)');
+        if (movie.year) metaParts.push(String(movie.year));
+        if (movie.genre) metaParts.push(genreLabel(movie.genre));
+        meta.textContent = metaParts.join('  ·  ');
+        heading.append(title, meta);
+
+        const actions = document.createElement('div'); actions.className = 'detail-actions';
+        const like = document.createElement('button');
+        like.type = 'button'; like.className = 'detail-action-button detail-like' + (movie.is_liked ? ' liked' : '');
+        like.setAttribute('aria-pressed', String(Boolean(movie.is_liked)));
+        like.textContent = (movie.is_liked ? '♥ Yoqdi' : '♡ Yoqdi') + ' · ' + Number(movie.likes_count || 0);
+        like.addEventListener('click', async () => {
+            if (!window.currentUser) { showGuestRestriction(); return; }
+            like.disabled = true;
+            try {
+                const result = await fetchAPI('toggle_like', 'POST', { movie_id: movie.id });
+                if (!result.success) throw new Error(result.error || 'Yoqtirish amali bajarilmadi.');
+                movie.is_liked = result.data.liked; movie.likes_count = result.data.count;
+                updateMovieInMemory(movie.id, { is_liked: movie.is_liked, likes_count: movie.likes_count });
+                like.setAttribute('aria-pressed', String(Boolean(movie.is_liked)));
+                like.classList.toggle('liked', Boolean(movie.is_liked));
+                like.textContent = (movie.is_liked ? '♥ Yoqdi' : '♡ Yoqdi') + ' · ' + Number(movie.likes_count || 0);
+            } catch (error) { showNotice(error.message || 'Yoqtirish amali bajarilmadi.'); }
+            finally { like.disabled = false; }
+        });
+
+        const download = document.createElement('a');
+        download.className = 'detail-action-button'; download.textContent = '↓ Yuklab olish';
+        download.href = apiUrl('download_movie', { id: movie.id, quality: movie.qualities?.[0] || 'original' });
+        download.setAttribute('aria-label', 'Kinoni yuklab olish');
+        if (!movie.qualities?.length) download.classList.add('is-disabled');
+        download.addEventListener('click', (event) => {
+            if (!window.currentUser) { event.preventDefault(); showGuestRestriction(); return; }
+            if (!movie.qualities?.length) { event.preventDefault(); showNotice('Bu kino uchun yuklab olish sifati mavjud emas.'); }
+        });
+
+        const share = document.createElement('button'); share.type = 'button'; share.className = 'detail-action-button'; share.textContent = '↗ Ulashish';
+        share.addEventListener('click', async () => {
+            const shareUrl = window.location.origin + window.location.pathname + '?play=' + encodeURIComponent(movie.id);
+            try {
+                if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(shareUrl);
+                else {
+                    const helper = document.createElement('textarea'); helper.value = shareUrl; helper.setAttribute('readonly', '');
+                    helper.style.position = 'fixed'; helper.style.opacity = '0'; document.body.append(helper); helper.select();
+                    const copied = document.execCommand('copy'); helper.remove(); if (!copied) throw new Error('Nusxa olish qo‘llab-quvvatlanmaydi.');
+                }
+                share.textContent = 'Havola nusxalandi';
+                window.setTimeout(() => { share.textContent = '↗ Ulashish'; }, 2200);
+            } catch (error) { showNotice(error.message || 'Havolani nusxalab bo‘lmadi.'); }
+        });
+        actions.append(like, download, share);
+
         const description = document.createElement('p');
         description.className = 'detail-description';
         description.textContent = movie.description || 'Kino haqida ma’lumot berilmagan.';
-        const play = document.createElement('button');
-        play.className = 'submit-btn';
-        play.type = 'button';
-        play.textContent = '▶ Tomosha qilish';
-        play.disabled = !movie.qualities?.length && !movie.video_url;
-        play.addEventListener('click', () => openPlayer(movie));
-        info.append(genre, title, description, play);
-        heading.append(image, info);
 
-        const actions = document.createElement('div');
-        actions.className = 'detail-actions';
-        const like = document.createElement('button');
-        like.type = 'button';
-        like.className = 'secondary-btn';
-        like.textContent = `${movie.is_liked ? '♥ Yoqdi' : '♡ Yoqtirish'} · ${movie.likes_count || 0}`;
-        like.addEventListener('click', async () => {
-            if (!window.currentUser) {
-                showGuestRestriction();
-                return;
-            }
-            try {
-                const result = await fetchAPI('toggle_like', 'POST', { movie_id: movie.id });
-                if (!result.success) throw new Error(result.error);
-                movie.is_liked = result.data.liked;
-                movie.likes_count = result.data.count;
-                like.textContent = `${movie.is_liked ? '♥ Yoqdi' : '♡ Yoqtirish'} · ${movie.likes_count}`;
-                updateMovieInMemory(movie.id, { is_liked: movie.is_liked, likes_count: movie.likes_count });
-            } catch (error) {
-                showNotice(error.message || 'Yoqtirish amali bajarilmadi.');
-            }
-        });
-        const stars = document.createElement('div');
-        stars.className = 'star-rating';
-        stars.setAttribute('aria-label', 'Baho tanlash');
+        const ratingPanel = document.createElement('section'); ratingPanel.className = 'rating-panel';
+        const ratingHeading = document.createElement('h2'); ratingHeading.textContent = 'Kinoni baholang';
+        const ratingControls = document.createElement('div'); ratingControls.className = 'detail-star-rating';
+        const personalRating = document.createElement('p'); personalRating.className = 'personal-rating';
+        function updateStarPreview(value) {
+            [...ratingControls.querySelectorAll('button')].forEach((button, index) => {
+                button.textContent = index < value ? '★' : '☆';
+                button.classList.toggle('selected', index < value);
+            });
+        }
         for (let score = 1; score <= 5; score += 1) {
-            const star = document.createElement('button');
-            star.type = 'button';
-            star.textContent = score <= Number(movie.my_rating || 0) ? '★' : '☆';
-            star.setAttribute('aria-label', `${score} yulduz`);
+            const star = document.createElement('button'); star.type = 'button';
+            star.setAttribute('aria-label', score + ' yulduz');
+            star.addEventListener('mouseenter', () => updateStarPreview(score));
+            star.addEventListener('focus', () => updateStarPreview(score));
             star.addEventListener('click', async () => {
-                if (!window.currentUser) {
-                    showGuestRestriction();
-                    return;
-                }
+                if (!window.currentUser) { showGuestRestriction(); return; }
+                star.disabled = true;
                 try {
                     const result = await fetchAPI('rate_movie', 'POST', { movie_id: movie.id, score });
-                    if (!result.success) throw new Error(result.error);
-                    movie.my_rating = score;
-                    movie.average_rating = result.data.average;
-                    movie.rating_count = result.data.count;
+                    if (!result.success) throw new Error(result.error || 'Baho saqlanmadi.');
+                    movie.my_rating = score; movie.average_rating = result.data.average; movie.rating_count = result.data.count;
+                    updateMovieInMemory(movie.id, { my_rating: score, average_rating: result.data.average, rating_count: result.data.count });
                     showDetails(movie);
-                    updateMovieInMemory(movie.id, {
-                        my_rating: score,
-                        average_rating: result.data.average,
-                        rating_count: result.data.count,
-                    });
-                } catch (error) {
-                    showNotice(error.message || 'Baho saqlanmadi.');
-                }
+                } catch (error) { showNotice(error.message || 'Baho saqlanmadi.'); }
+                finally { star.disabled = false; }
             });
-            stars.append(star);
+            ratingControls.append(star);
         }
-        const ratingText = document.createElement('span');
-        ratingText.textContent = ` ${Number(movie.average_rating || movie.rating || 0).toFixed(1)} / 5`;
-        stars.append(ratingText);
-        actions.append(like, stars);
+        ratingControls.addEventListener('mouseleave', () => updateStarPreview(Number(movie.my_rating || 0)));
+        ratingControls.addEventListener('focusout', () => updateStarPreview(Number(movie.my_rating || 0)));
+        updateStarPreview(Number(movie.my_rating || 0));
+        personalRating.textContent = Number(movie.my_rating) > 0 ? 'Sizning bahoyingiz: ' + Number(movie.my_rating) + ' / 5' : 'Hali baho bermagansiz';
+        ratingPanel.append(ratingHeading, ratingControls, personalRating);
 
-        const commentSection = document.createElement('section');
-        commentSection.className = 'comments-section';
-        const commentsTitle = document.createElement('h3');
-        commentsTitle.textContent = 'Izohlar';
-        const commentList = document.createElement('div');
-        commentList.className = 'comment-list';
-        const form = document.createElement('form');
-        form.className = 'comment-form';
-        const textarea = document.createElement('textarea');
-        textarea.name = 'body';
-        textarea.maxLength = 2000;
-        textarea.placeholder = 'Fikringizni yozing…';
-        textarea.setAttribute('aria-label', 'Izoh matni');
-        const submit = document.createElement('button');
-        submit.className = 'submit-btn';
-        submit.type = 'submit';
-        submit.textContent = 'Izoh yuborish';
+        const commentSection = document.createElement('section'); commentSection.className = 'comments-section';
+        const commentsTitle = document.createElement('h2'); commentsTitle.textContent = 'Izohlar';
+        const commentList = document.createElement('div'); commentList.className = 'comment-list';
+        const form = document.createElement('form'); form.className = 'comment-form';
         if (!window.currentUser) {
-            const signIn = document.createElement('button');
-            signIn.type = 'button';
-            signIn.className = 'submit-btn';
-            signIn.textContent = 'Izoh yozish uchun kiring';
-            signIn.addEventListener('click', showGuestRestriction);
-            form.append(signIn);
+            const signIn = document.createElement('button'); signIn.type = 'button'; signIn.className = 'submit-btn';
+            signIn.textContent = 'Izoh yozish uchun kiring'; signIn.addEventListener('click', showGuestRestriction); form.append(signIn);
         } else {
+            const textarea = document.createElement('textarea'); textarea.name = 'body'; textarea.maxLength = 2000;
+            textarea.placeholder = 'Fikringizni yozing…'; textarea.setAttribute('aria-label', 'Izoh matni'); textarea.required = true;
+            const submit = document.createElement('button'); submit.className = 'submit-btn'; submit.type = 'submit'; submit.textContent = 'Yuborish';
             form.append(textarea, submit);
             form.addEventListener('submit', async (event) => {
-                event.preventDefault();
+                event.preventDefault(); if (!textarea.value.trim()) { textarea.focus(); return; }
                 submit.disabled = true;
                 try {
-                    const result = await fetchAPI('add_comment', 'POST', { movie_id: movie.id, body: textarea.value });
-                    if (!result.success) throw new Error(result.error);
-                    textarea.value = '';
-                    await loadComments(movie, commentList);
-                } catch (error) {
-                    showNotice(error.message || 'Izoh yuborilmadi.');
-                } finally {
-                    submit.disabled = false;
-                }
+                    const result = await fetchAPI('add_comment', 'POST', { movie_id: movie.id, body: textarea.value.trim() });
+                    if (!result.success) throw new Error(result.error || 'Izoh yuborilmadi.');
+                    textarea.value = ''; await loadComments(movie, commentList);
+                } catch (error) { showNotice(error.message || 'Izoh yuborilmadi.'); }
+                finally { submit.disabled = false; }
             });
         }
         commentSection.append(commentsTitle, form, commentList);
-        detailContent.append(heading, actions, commentSection);
-        const detailAds = document.createElement('div');
-        detailAds.className = 'ad-slot';
-        loadAds('movie_detail', detailAds);
-        detailContent.append(detailAds);
+
+        const sidebar = document.createElement('aside'); sidebar.className = 'movie-detail-sidebar';
+        const similarTitle = document.createElement('h2'); similarTitle.textContent = 'O‘xshash kinolar';
+        const similarList = document.createElement('div'); similarList.className = 'similar-movies-list';
+        const similar = movies.filter((item) => Number(item.id) !== Number(movie.id) && movie.genre && item.genre === movie.genre)
+            .sort((a, b) => Number(b.average_rating || 0) - Number(a.average_rating || 0)).slice(0, 4);
+        if (!similar.length) {
+            const empty = document.createElement('p'); empty.className = 'section-note'; empty.textContent = 'Hozircha o‘xshash kinolar yo‘q.'; similarList.append(empty);
+        }
+        similar.forEach((item) => {
+            const row = document.createElement('button'); row.type = 'button'; row.className = 'similar-movie';
+            const image = document.createElement('img'); image.alt = (item.title || 'Kino') + ' posteri'; image.width = 72; image.height = 108; image.loading = 'lazy';
+            const itemPoster = posterUrl(item); if (itemPoster) image.src = itemPoster; else image.hidden = true;
+            image.addEventListener('error', () => { image.hidden = true; }, { once: true });
+            const copy = document.createElement('span'); copy.className = 'similar-movie-copy';
+            const itemName = document.createElement('strong'); itemName.textContent = item.title || 'Nomsiz kino';
+            const itemMeta = document.createElement('span'); itemMeta.textContent = [item.genre ? genreLabel(item.genre) : '', item.year || ''].filter(Boolean).join(' · ');
+            const itemRating = document.createElement('span'); itemRating.className = 'similar-rating';
+            itemRating.textContent = Number(item.rating_count) > 0 ? '★ ' + Number(item.average_rating || item.rating).toFixed(1) : 'Yangi';
+            copy.append(itemName, itemMeta, itemRating); row.append(image, copy);
+            row.addEventListener('click', () => showDetails(item)); similarList.append(row);
+        });
+        sidebar.append(similarTitle, similarList);
+        main.append(breadcrumb, preview, heading, actions, description, ratingPanel, commentSection);
+        layout.append(main, sidebar); detailContent.append(layout);
         detailModal.classList.add('active');
         loadComments(movie, commentList);
     }
@@ -488,56 +533,54 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await fetchAPI('get_comments', 'GET', { id: movie.id });
             if (!result.success) throw new Error(result.error || 'Izohlarni olib bo‘lmadi.');
             container.replaceChildren();
+            const heading = container.parentElement?.querySelector('h2');
+            if (heading) heading.textContent = 'Izohlar (' + result.data.length + ')';
             if (!result.data.length) {
-                const empty = document.createElement('p');
-                empty.className = 'section-note';
-                empty.textContent = 'Hozircha izohlar yo‘q.';
-                container.append(empty);
-                return;
+                const empty = document.createElement('p'); empty.className = 'section-note'; empty.textContent = 'Hozircha izohlar yo‘q.'; container.append(empty); return;
             }
             result.data.forEach((comment) => {
-                const item = document.createElement('article');
-                item.className = 'comment-item';
-                const header = document.createElement('div');
-                header.className = 'comment-header';
-                const author = document.createElement('strong');
-                author.textContent = comment.username;
+                const item = document.createElement('article'); item.className = 'comment-item';
+                const avatar = document.createElement('span'); avatar.className = 'comment-avatar';
+                avatar.textContent = (comment.username || 'U').trim().slice(0, 1).toUpperCase();
+                const content = document.createElement('div'); content.className = 'comment-content';
+                const header = document.createElement('div'); header.className = 'comment-header';
+                const author = document.createElement('strong'); author.textContent = comment.username || 'Foydalanuvchi';
                 const date = document.createElement('time');
-                date.textContent = new Date(`${comment.created_at}Z`).toLocaleDateString('uz-UZ');
-                const body = document.createElement('p');
-                body.textContent = comment.body;
-                header.append(author, date);
-                item.append(header, body);
+                const created = new Date(String(comment.created_at || '').replace(' ', 'T') + 'Z');
+                if (Number.isNaN(created.getTime())) date.textContent = '';
+                else {
+                    const seconds = Math.round((created.getTime() - Date.now()) / 1000);
+                    const units = [['year', 31536000], ['month', 2592000], ['week', 604800], ['day', 86400], ['hour', 3600], ['minute', 60]];
+                    const relative = new Intl.RelativeTimeFormat('uz', { numeric: 'auto' });
+                    const unit = units.find((entry) => Math.abs(seconds) >= entry[1]);
+                    date.textContent = unit ? relative.format(Math.round(seconds / unit[1]), unit[0]) : relative.format(seconds, 'second');
+                }
+                date.dateTime = comment.created_at || '';
+                const body = document.createElement('p'); body.textContent = comment.body || '';
+                header.append(author, date); content.append(header, body); item.append(avatar, content);
                 if (window.currentUser && (Number(window.currentUser.id) === Number(comment.user_id)
                     || ['admin', 'super_admin'].includes(window.currentUser.role))) {
-                    const actions = document.createElement('div');
-                    actions.className = 'comment-actions';
-                    const edit = document.createElement('button');
-                    edit.type = 'button';
-                    edit.textContent = 'Tahrirlash';
+                    const actions = document.createElement('div'); actions.className = 'comment-actions';
+                    const edit = document.createElement('button'); edit.type = 'button'; edit.textContent = 'Tahrirlash';
                     edit.addEventListener('click', async () => {
-                        const nextBody = window.prompt('Izoh matnini tahrirlang:', comment.body);
-                        if (nextBody === null) return;
-                        const update = await fetchAPI('update_comment', 'POST', { id: comment.id, body: nextBody });
-                        if (!update.success) return showNotice(update.error || 'Izoh yangilanmadi.');
-                        await loadComments(movie, container);
+                        const nextBody = window.prompt('Izoh matnini tahrirlang:', comment.body); if (nextBody === null) return;
+                        try { const update = await fetchAPI('update_comment', 'POST', { id: comment.id, body: nextBody });
+                            if (!update.success) throw new Error(update.error || 'Izoh yangilanmadi.'); await loadComments(movie, container);
+                        } catch (error) { showNotice(error.message || 'Izoh yangilanmadi.'); }
                     });
-                    const remove = document.createElement('button');
-                    remove.type = 'button';
-                    remove.textContent = 'O‘chirish';
+                    const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = 'O‘chirish';
                     remove.addEventListener('click', async () => {
                         if (!window.confirm('Izoh o‘chirilsinmi?')) return;
-                        const deleted = await fetchAPI('delete_comment', 'POST', { id: comment.id });
-                        if (!deleted.success) return showNotice(deleted.error || 'Izoh o‘chirilmadi.');
-                        await loadComments(movie, container);
+                        try { const deleted = await fetchAPI('delete_comment', 'POST', { id: comment.id });
+                            if (!deleted.success) throw new Error(deleted.error || 'Izoh o‘chirilmadi.'); await loadComments(movie, container);
+                        } catch (error) { showNotice(error.message || 'Izoh o‘chirilmadi.'); }
                     });
-                    actions.append(edit, remove);
-                    item.append(actions);
+                    actions.append(edit, remove); content.append(actions);
                 }
                 container.append(item);
             });
         } catch (error) {
-            container.textContent = error.message || 'Izohlarni olib bo‘lmadi.';
+            container.textContent = error.message || 'Izohlarni yuklab bo‘lmadi.';
         }
     }
 
