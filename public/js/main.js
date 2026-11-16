@@ -309,10 +309,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             heroBackground.hidden = true;
             heroWatchButton.disabled = true;
             heroDetailsButton.disabled = true;
+            if (heroTimer) window.clearInterval(heroTimer);
             return;
         }
         heroDetailsButton.disabled = false;
         updateHeroSlide(Math.min(heroCurrentIndex, featuredMovies.length - 1));
+        startHeroCarousel();
     }
 
     function startHeroCarousel() {
@@ -389,14 +391,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function showGuestRestriction() {
-        const message = 'Ushbu imkoniyatdan foydalanish uchun tizimga kiring yoki ro‘yxatdan o‘ting.';
+        const message = 'Ushbu amal uchun tizimga kiring yoki ro‘yxatdan o‘ting.';
         showNotice(message);
-        const loginButton = document.getElementById('noticeToastLogin');
-        const toast = document.getElementById('noticeToast');
-        if (!loginButton || !toast) return;
-        loginButton.hidden = false;
-        loginButton.onclick = () => window.openAuthModal('login');
-        toast.hidden = false;
+        if (typeof window.openAuthModal === 'function') {
+            window.openAuthModal('login');
+            if (typeof window.showAuthMessage === 'function') window.showAuthMessage(message);
+        }
     }
 
     function closeMovieDetails() {
@@ -989,23 +989,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function loadSocialLinks() {
         const footer = document.getElementById('footerSocialLinks');
-        const promo = document.getElementById('instagramPromo');
         try {
             const result = await fetchAPI('get_social_links');
-            if (!result.success || !Array.isArray(result.data)) {
-                if (promo) promo.hidden = true;
-                return;
-            }
+            if (!result.success || !Array.isArray(result.data)) return;
             if (footer) footer.replaceChildren();
             const symbols = { telegram: '➤', instagram: '◎', youtube: '▶', tiktok: '♪', facebook: 'f', x: '𝕏' };
-            let instagramUrl = '';
             result.data.forEach((item) => {
                 if (!item || typeof item.name !== 'string' || typeof item.url !== 'string') return;
                 try {
                     const destination = new URL(item.url);
-                    if (destination.protocol !== 'https:') return;
-                    if (item.name.trim().toLowerCase() === 'instagram') instagramUrl = destination.href;
-                    if (!footer) return;
+                    if (destination.protocol !== 'https:' || !footer) return;
                     const link = document.createElement('a');
                     link.href = destination.href;
                     link.target = '_blank';
@@ -1018,23 +1011,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
             });
-            if (promo) {
-                if (instagramUrl) {
-                    promo.href = instagramUrl;
-                    promo.hidden = false;
-                    const handle = promo.querySelector('.promo-handle');
-                    if (handle) {
-                        const path = new URL(instagramUrl).pathname.split('/').filter(Boolean).pop();
-                        handle.textContent = path ? `@${path}` : 'Instagram';
-                    }
-                } else {
-                    promo.hidden = true;
-                }
-            }
         } catch (error) {
-            if (promo) promo.hidden = true;
             console.error('Ijtimoiy tarmoq havolalari yuklanmadi:', error);
         }
+    }
+
+    function syncHomePromo() {
+        const ads = document.getElementById('homeAds');
+        const instagram = document.getElementById('instagramPromo');
+        if (!ads || !instagram) return;
+        const hasVisibleAd = Boolean(ads.querySelector('.ad-card'));
+        ads.hidden = !hasVisibleAd;
+        instagram.hidden = hasVisibleAd;
     }
 
     const hiddenAdStorageKey = 'ulmovi.hiddenAds.v1';
@@ -1099,6 +1087,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     hideAdFor30Days(ad.id);
                     card.remove();
                     if (!container.querySelector('.ad-card')) container.hidden = true;
+                    if (placement === 'home') syncHomePromo();
                 });
                 const link = document.createElement('a');
                 link.href = destination.href;
@@ -1118,17 +1107,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             container.hidden = !container.querySelector('.ad-card');
         } catch (error) {
             console.error('Reklamalar yuklanmadi:', error);
+        } finally {
+            if (placement === 'home') syncHomePromo();
         }
     }
 
     document.getElementById('closePlayerBtn').addEventListener('click', closePlayer);
+    if (heroElement) {
+        heroElement.addEventListener('mouseenter', () => {});
+        heroElement.addEventListener('focusin', () => {});
+        heroElement.addEventListener('focusout', () => {});
+    }
     playerModal.addEventListener('click', (event) => { if (event.target === playerModal) closePlayer(); });
-    document.getElementById('closeDetailBtn').addEventListener('click', () => detailModal.classList.remove('active'));
-    detailModal.addEventListener('click', (event) => { if (event.target === detailModal) detailModal.classList.remove('active'); });
+    document.getElementById('closeDetailBtn').addEventListener('click', closeMovieDetails);
+    detailModal.addEventListener('click', (event) => { if (event.target === detailModal) closeMovieDetails(); });
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             closePlayer();
-            detailModal.classList.remove('active');
+            closeMovieDetails();
         }
     });
     genreFilter.addEventListener('change', () => {
@@ -1174,6 +1170,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadSocialLinks(),
         ]);
         const params = new URLSearchParams(window.location.search);
+        const sharedMovieMatch = window.location.hash.match(/^#movie-(\d+)$/);
+        const sharedMovieId = Number(params.get('movie') || sharedMovieMatch?.[1] || 0);
+        if (sharedMovieId > 0) {
+            let sharedMovie = movies.find((item) => Number(item.id) === sharedMovieId);
+            if (!sharedMovie) {
+                const sharedResult = await fetchAPI('get_movies', 'GET', { movie_id: sharedMovieId, limit: 1 });
+                if (sharedResult.success && sharedResult.data.length) sharedMovie = sharedResult.data[0];
+            }
+            if (sharedMovie) showDetails(sharedMovie);
+        }
         const requestedMovieId = Number(params.get('play') || 0);
         if (requestedMovieId > 0) {
             const result = await fetchAPI('get_movies', 'GET', { movie_id: requestedMovieId, limit: 1 });
