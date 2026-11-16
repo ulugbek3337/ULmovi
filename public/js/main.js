@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeMovie = null;
     let noticeTimer = null;
     let saveActiveProgress = null;
+    let heroSlides = [];
+    let heroSlideIndex = 0;
+    let heroTimer = null;
+    let heroPaused = false;
 
     function apiUrl(action, params = {}) {
         const url = new URL(API_URL);
@@ -50,41 +54,203 @@ document.addEventListener('DOMContentLoaded', async () => {
         })[genre] || genre || 'Janr ko‘rsatilmagan';
     }
 
-    function makeMovieCard(movie) {
+    function renderHeroSlide(index) {
+        const title = document.getElementById('heroTitle');
+        const genre = document.getElementById('heroGenre');
+        const meta = document.getElementById('heroMeta');
+        const description = document.getElementById('heroDescription');
+        const backdrop = document.getElementById('heroBackdrop');
+        const poster = document.getElementById('heroPoster');
+        const play = document.getElementById('heroPlayBtn');
+        const details = document.getElementById('heroDetailsBtn');
+        const pagination = document.getElementById('heroPagination');
+        if (!heroSlides.length) {
+            title.textContent = 'Kinolar olamiga xush kelibsiz';
+            genre.textContent = 'ULmovi tanlovi';
+            meta.textContent = '';
+            description.textContent = 'Sevimli hikoyangizni tanlang va tomoshadan zavqlaning.';
+            backdrop.hidden = true;
+            poster.hidden = true;
+            play.disabled = true;
+            details.disabled = true;
+            pagination.replaceChildren();
+            return;
+        }
+        heroSlideIndex = (index + heroSlides.length) % heroSlides.length;
+        const movie = heroSlides[heroSlideIndex];
+        const source = posterUrl(movie);
+        title.textContent = movie.title || 'Nomsiz kino';
+        genre.textContent = genreLabel(movie.genre);
+        const parts = [];
+        if (Number(movie.rating_count) > 0) parts.push('★ ' + Number(movie.average_rating || movie.rating).toFixed(1));
+        if (movie.year) parts.push(String(movie.year));
+        if (movie.genre) parts.push(genreLabel(movie.genre));
+        meta.textContent = parts.join('  ·  ');
+        description.textContent = movie.description || '';
+        description.hidden = !movie.description;
+        backdrop.hidden = !source;
+        poster.hidden = !source;
+        if (source) {
+            backdrop.src = source;
+            poster.src = source;
+            poster.alt = (movie.title || 'Kino') + ' posteri';
+            backdrop.onerror = () => { backdrop.hidden = true; };
+            poster.onerror = () => { poster.hidden = true; };
+        }
+        play.disabled = !movie.qualities?.length && !movie.video_url;
+        details.disabled = false;
+        play.onclick = () => openPlayer(movie);
+        details.onclick = () => showDetails(movie);
+        pagination.replaceChildren();
+        heroSlides.forEach((slide, slideIndex) => {
+            const indicator = document.createElement('button');
+            indicator.type = 'button';
+            indicator.className = 'hero-indicator' + (slideIndex === heroSlideIndex ? ' active' : '');
+            indicator.setAttribute('aria-label', (slide.title || 'Kino') + ' tavsiyasiga o‘tish');
+            indicator.setAttribute('aria-pressed', String(slideIndex === heroSlideIndex));
+            indicator.addEventListener('click', () => { renderHeroSlide(slideIndex); restartHeroTimer(); });
+            pagination.append(indicator);
+        });
+    }
+
+    function stopHeroTimer() {
+        if (heroTimer) window.clearInterval(heroTimer);
+        heroTimer = null;
+    }
+
+    function startHeroTimer() {
+        stopHeroTimer();
+        if (heroSlides.length < 2 || heroPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        heroTimer = window.setInterval(() => renderHeroSlide(heroSlideIndex + 1), 7000);
+    }
+
+    function restartHeroTimer() { startHeroTimer(); }
+
+    function renderHeroCarousel() {
+        heroSlides = movies.slice(0, 4);
+        renderHeroSlide(Math.min(heroSlideIndex, Math.max(heroSlides.length - 1, 0)));
+        const hero = document.getElementById('featuredHero');
+        if (hero && !hero.dataset.carouselBound) {
+            hero.dataset.carouselBound = 'true';
+            hero.addEventListener('mouseenter', () => { heroPaused = true; stopHeroTimer(); });
+            hero.addEventListener('mouseleave', () => { heroPaused = false; startHeroTimer(); });
+            hero.addEventListener('focusin', () => { heroPaused = true; stopHeroTimer(); });
+            hero.addEventListener('focusout', (event) => {
+                if (!hero.contains(event.relatedTarget)) { heroPaused = false; startHeroTimer(); }
+            });
+        }
+        startHeroTimer();
+    }
+
+    function renderMovieSkeletons() {
+        const grid = document.getElementById('moviesGrid');
+        if (!grid) return;
+        grid.replaceChildren();
+        for (let index = 0; index < 6; index += 1) {
+            const skeleton = document.createElement('div');
+            skeleton.className = 'movie-skeleton';
+            skeleton.setAttribute('aria-hidden', 'true');
+            skeleton.innerHTML = '<span class="skeleton-poster"></span><span class="skeleton-line"></span><span class="skeleton-line short"></span>';
+            grid.append(skeleton);
+        }
+    }
+
+    function renderMoviesError(message) {
+        const grid = document.getElementById('moviesGrid');
+        if (!grid) return;
+        grid.replaceChildren();
+        const error = document.createElement('div');
+        error.className = 'empty-message error-state';
+        const text = document.createElement('p');
+        text.textContent = message || 'Kinolarni yuklab bo‘lmadi. Internet aloqasini tekshiring.';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'secondary-btn';
+        retry.textContent = 'Qayta urinish';
+        retry.addEventListener('click', () => loadMovies(true).catch((error) => renderMoviesError(error.message)));
+        error.append(text, retry);
+        grid.append(error);
+    }
+
+    function makeMovieCard(movie, rank = null) {
         const card = document.createElement('article');
-        card.className = 'movie-card';
+        card.className = 'movie-card' + (rank ? ' ranked-movie-card' : '');
+        if (rank) {
+            const number = document.createElement('span');
+            number.className = 'rank-number';
+            number.setAttribute('aria-hidden', 'true');
+            number.textContent = String(rank);
+            card.append(number);
+        }
         const posterWrap = document.createElement('div');
         posterWrap.className = 'movie-poster-wrap';
+        const posterLink = document.createElement('button');
+        posterLink.type = 'button';
+        posterLink.className = 'movie-poster-link';
+        posterLink.setAttribute('aria-label', (movie.title || 'Kino') + ' haqida batafsil');
+        posterLink.addEventListener('click', () => showDetails(movie));
         const image = document.createElement('img');
         image.className = 'movie-poster';
-        const imageSource = posterUrl(movie);
-        image.alt = `${movie.title} posteri`;
+        image.alt = (movie.title || 'Kino') + ' posteri';
         image.width = 400;
         image.height = 600;
         image.loading = 'lazy';
         image.decoding = 'async';
         image.fetchPriority = 'low';
+        const imageSource = posterUrl(movie);
+        const fallback = document.createElement('span');
+        fallback.className = 'poster-fallback';
+        const initial = document.createElement('span');
+        initial.className = 'poster-initial';
+        initial.textContent = (movie.title || 'U').trim().slice(0, 1).toUpperCase();
+        const caption = document.createElement('span');
+        caption.className = 'poster-fallback-caption';
+        caption.textContent = 'Poster tez orada';
+        fallback.append(initial, caption);
         if (imageSource) {
             image.src = imageSource;
-            image.addEventListener('error', () => {
-                image.hidden = true;
-                posterWrap.classList.add('poster-placeholder');
-                posterWrap.dataset.initial = (movie.title || 'U').trim().slice(0, 1).toUpperCase();
-            }, { once: true });
+            image.addEventListener('error', () => { image.hidden = true; fallback.hidden = false; posterWrap.classList.add('poster-placeholder'); }, { once: true });
+            fallback.hidden = true;
         } else {
             image.hidden = true;
+            fallback.hidden = false;
             posterWrap.classList.add('poster-placeholder');
-            posterWrap.dataset.initial = (movie.title || 'U').trim().slice(0, 1).toUpperCase();
         }
-        posterWrap.append(image);
-        const play = document.createElement('button');
-        play.className = 'poster-play';
-        play.type = 'button';
-        play.textContent = '▶';
-        play.setAttribute('aria-label', `${movie.title} filmini tomosha qilish`);
-        play.disabled = !movie.qualities?.length && !movie.video_url;
-        play.addEventListener('click', () => openPlayer(movie));
-        posterWrap.append(play);
+        const hoverPlay = document.createElement('span');
+        hoverPlay.className = 'poster-play';
+        hoverPlay.setAttribute('aria-hidden', 'true');
+        hoverPlay.textContent = '▶';
+        posterLink.append(image, fallback, hoverPlay);
+        posterWrap.append(posterLink);
+
+        const rating = document.createElement('span');
+        rating.className = 'movie-rating-badge' + (Number(movie.rating_count) > 0 ? '' : ' new-badge');
+        rating.textContent = Number(movie.rating_count) > 0
+            ? '★ ' + Number(movie.average_rating || movie.rating).toFixed(1)
+            : 'Yangi';
+        rating.setAttribute('aria-label', Number(movie.rating_count) > 0 ? 'Reyting ' + rating.textContent : 'Yangi kino');
+        posterWrap.append(rating);
+
+        const like = document.createElement('button');
+        like.className = 'like-button poster-like' + (movie.is_liked ? ' liked' : '');
+        like.type = 'button';
+        like.setAttribute('aria-label', 'Kinoni yoqtirish');
+        like.setAttribute('aria-pressed', String(Boolean(movie.is_liked)));
+        like.textContent = (movie.is_liked ? '♥ ' : '♡ ') + (movie.likes_count || 0);
+        like.addEventListener('click', async () => {
+            if (!window.currentUser) { showGuestRestriction(); return; }
+            like.disabled = true;
+            try {
+                const result = await fetchAPI('toggle_like', 'POST', { movie_id: movie.id });
+                if (!result.success) throw new Error(result.error || 'Yoqtirish amali bajarilmadi.');
+                movie.is_liked = result.data.liked;
+                movie.likes_count = result.data.count;
+                updateMovieInMemory(movie.id, { is_liked: movie.is_liked, likes_count: movie.likes_count });
+            } catch (error) {
+                showNotice(error.message || 'Yoqtirish amali bajarilmadi.');
+            } finally { like.disabled = false; }
+        });
+        posterWrap.append(like);
 
         const body = document.createElement('div');
         body.className = 'movie-card-body';
@@ -92,45 +258,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         title.textContent = movie.title || 'Nomsiz kino';
         const metadata = document.createElement('p');
         metadata.className = 'movie-meta';
-        metadata.textContent = `${genreLabel(movie.genre)} · ${movie.year || 'Yil ko‘rsatilmagan'}`;
-        const ratingRow = document.createElement('div');
-        ratingRow.className = 'movie-rating-row';
-        const rating = document.createElement('span');
-        rating.textContent = `★ ${Number(movie.average_rating || movie.rating || 0).toFixed(1)} (${movie.rating_count || 0})`;
-        const like = document.createElement('button');
-        like.className = `like-button${movie.is_liked ? ' liked' : ''}`;
-        like.type = 'button';
-        like.setAttribute('aria-label', 'Kinoni yoqtirish');
-        like.textContent = `${movie.is_liked ? '♥' : '♡'} ${movie.likes_count || 0}`;
-        like.addEventListener('click', async () => {
-            if (!window.currentUser) {
-                showGuestRestriction();
-                return;
-            }
-            try {
-                const result = await fetchAPI('toggle_like', 'POST', { movie_id: movie.id });
-                if (!result.success) throw new Error(result.error);
-                movie.is_liked = result.data.liked;
-                movie.likes_count = result.data.count;
-                like.classList.toggle('liked', movie.is_liked);
-                like.textContent = `${movie.is_liked ? '♥' : '♡'} ${movie.likes_count}`;
-            } catch (error) {
-                showNotice(error.message || 'Yoqtirish amali bajarilmadi.');
-            }
-        });
-        ratingRow.append(rating, like);
-        const details = document.createElement('button');
-        details.className = 'details-button';
-        details.type = 'button';
-        details.textContent = 'Batafsil';
-        details.addEventListener('click', () => showDetails(movie));
-        body.append(title, metadata, ratingRow, details);
+        metadata.textContent = [movie.genre ? genreLabel(movie.genre) : '', movie.year || ''].filter(Boolean).join(' · ');
+        body.append(title, metadata);
         card.append(posterWrap, body);
         return card;
     }
 
-    function renderGrid(containerId, list, emptyText = 'Bu bo‘limda hozircha kino yo‘q.', includeAds = false) {
+    function renderGrid(containerId, list, emptyText = 'Bu bo‘limda hozircha kino yo‘q.', options = {}) {
         const container = document.getElementById(containerId);
+        if (!container) return;
         container.replaceChildren();
         if (!list.length) {
             const empty = document.createElement('p');
@@ -139,35 +275,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             container.append(empty);
             return;
         }
-        list.forEach((movie, index) => {
-            container.append(makeMovieCard(movie));
-            if (includeAds && (index + 1) % 12 === 0 && index + 1 < list.length) {
-                const slot = document.createElement('div');
-                slot.className = 'ad-slot ad-slot-inline';
-                slot.setAttribute('aria-label', 'Reklama');
-                container.append(slot);
-                loadAds('between_sections', slot);
-            }
-        });
+        list.forEach((movie, index) => container.append(makeMovieCard(movie, options.ranked ? index + 1 : null)));
     }
 
     function renderMovies() {
         const search = searchInput.value.trim().toLocaleLowerCase();
         const genre = genreFilter.value;
         const filtered = movies.filter((movie) => {
-            const text = `${movie.title || ''} ${movie.genre || ''} ${movie.description || ''}`.toLocaleLowerCase();
-            return (!search || text.includes(search)) && (!genre || movie.genre === genre);
+            const text = (movie.title || '') + ' ' + (movie.genre || '') + ' ' + (movie.description || '');
+            return (!search || text.toLocaleLowerCase().includes(search)) && (!genre || movie.genre === genre);
         });
-        renderGrid('moviesGrid', filtered, search || genre ? 'Qidiruv bo‘yicha kino topilmadi.' : 'Hozircha kinolar qo‘shilmagan.', true);
-        renderGrid('popularGrid', [...filtered].sort((a, b) => Number(b.likes_count) - Number(a.likes_count)).slice(0, 12));
-        renderGrid('topRatedGrid', [...filtered].filter((item) => Number(item.rating_count) > 0)
-            .sort((a, b) => Number(b.average_rating) - Number(a.average_rating)).slice(0, 12));
-        renderGrid('recommendedGrid', [...filtered].sort((a, b) => {
-            const scoreA = Number(a.average_rating || a.rating || 0) * Math.log(Number(a.rating_count || 0) + 1);
-            const scoreB = Number(b.average_rating || b.rating || 0) * Math.log(Number(b.rating_count || 0) + 1);
-            return scoreB - scoreA;
-        }).slice(0, 12));
-        status.textContent = `${filtered.length} ta kino`;
+        const emptyText = genre ? 'Bu janrda hozircha kino yo‘q.' : (search ? 'Qidiruv bo‘yicha kino topilmadi.' : 'Hozircha kinolar qo‘shilmagan.');
+        renderGrid('moviesGrid', filtered, emptyText);
+        const popular = [...filtered].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0)).slice(0, 5);
+        renderGrid('popularGrid', popular, 'Ommabop kinolar hozircha yo‘q.', { ranked: true });
+        status.textContent = filtered.length + ' ta kino';
+        renderHeroCarousel();
     }
 
     async function loadMovies(reset = false) {
@@ -175,6 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             offset = 0;
             movies = [];
             status.textContent = 'Kinolar yuklanmoqda…';
+            renderMovieSkeletons();
         }
         const params = { limit: pageSize, offset };
         if (searchInput.value.trim()) params.q = searchInput.value.trim();
