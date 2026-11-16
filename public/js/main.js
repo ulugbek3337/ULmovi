@@ -778,7 +778,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 author.textContent = comment.username || 'Foydalanuvchi';
                 const date = document.createElement('time');
                 const rawCreatedAt = String(comment.created_at || '');
-                const normalizedCreatedAt = /(?:Z|[+-]\\d{2}:\\d{2})$/i.test(rawCreatedAt)
+                const normalizedCreatedAt = /(?:Z|[+-]\d{2}:\d{2})$/i.test(rawCreatedAt)
                     ? rawCreatedAt : `${rawCreatedAt}Z`;
                 const createdAt = new Date(normalizedCreatedAt);
                 date.dateTime = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString();
