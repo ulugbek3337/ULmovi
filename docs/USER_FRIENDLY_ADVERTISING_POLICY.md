@@ -80,4 +80,11 @@ Statistika imkon qadar agregat ko'rinishda saqlansin. Keraksiz shaxsiy kuzatuv, 
 5. Foydalanuvchi roziligi bilan video reklama — alohida, keyingi bosqich.
 6. Staging sinovlari va asta-sekin ishga tushirish.
 
+## 10. Amaldagi kod holati
+
+- Katalogdagi reklama har 12 ta kino kartasidan keyin joylashtiriladi; ortiqcha alohida katalog banneri olib tashlangan.
+- Reklamani yashirish 30 kunlik muddat bilan brauzer localStorage xotirasida saqlanadi.
+- Profil sahifasida video reklama roziligini yoqish/o‘chirish boshqaruvi mavjud; tanlov shu brauzerda eslab qolinadi.
+- Hozirgi loyihada video reklama provayderi yoki video reklama kontenti ulanmagan. Shu sababli rozilik saqlanadi, ammo video reklama ijro etilmaydi. Provayder integratsiyasi alohida bosqich va testlarni talab qiladi.
+
 **Muhim:** Bu hujjat siyosatni belgilaydi. Video reklama roziligi, statistika va yangi banner joylari amaliy kodda bosqichma-bosqich amalga oshirilishi va testdan o'tishi shart.
