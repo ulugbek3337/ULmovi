@@ -1008,18 +1008,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         videoContainer.replaceChildren();
     }
 
+    let instagramPromoAvailable = false;
+
     async function loadSocialLinks() {
         const footer = document.getElementById('footerSocialLinks');
+        const promo = document.getElementById('instagramPromo');
         try {
             const result = await fetchAPI('get_social_links');
             if (!result.success || !Array.isArray(result.data)) return;
             if (footer) footer.replaceChildren();
             const symbols = { telegram: '➤', instagram: '◎', youtube: '▶', tiktok: '♪', facebook: 'f', x: '𝕏' };
+            let instagramUrl = '';
             result.data.forEach((item) => {
                 if (!item || typeof item.name !== 'string' || typeof item.url !== 'string') return;
                 try {
                     const destination = new URL(item.url);
-                    if (destination.protocol !== 'https:' || !footer) return;
+                    if (destination.protocol !== 'https:') return;
+                    if (item.name.trim().toLowerCase() === 'instagram') instagramUrl = destination.href;
+                    if (!footer) return;
                     const link = document.createElement('a');
                     link.href = destination.href;
                     link.target = '_blank';
@@ -1032,8 +1038,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     return;
                 }
             });
+            instagramPromoAvailable = Boolean(instagramUrl);
+            if (promo && instagramUrl) {
+                promo.href = instagramUrl;
+                promo.target = '_blank';
+                promo.rel = 'noopener noreferrer';
+                const handle = promo.querySelector('.promo-handle');
+                if (handle) {
+                    const path = new URL(instagramUrl).pathname.split('/').filter(Boolean).pop();
+                    handle.textContent = path ? `@${path}` : 'Instagram';
+                }
+            }
         } catch (error) {
+            instagramPromoAvailable = false;
             console.error('Ijtimoiy tarmoq havolalari yuklanmadi:', error);
+        } finally {
+            syncHomePromo();
         }
     }
 
@@ -1043,7 +1063,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!ads || !instagram) return;
         const hasVisibleAd = Boolean(ads.querySelector('.ad-card'));
         ads.hidden = !hasVisibleAd;
-        instagram.hidden = hasVisibleAd;
+        instagram.hidden = hasVisibleAd || !instagramPromoAvailable;
     }
 
     const hiddenAdStorageKey = 'ulmovi.hiddenAds.v1';
