@@ -751,49 +751,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadSocialLinks() {
         const footer = document.getElementById('footerSocialLinks');
         const promo = document.getElementById('instagramPromo');
+        const updatePromoVisibility = () => {
+            if (promo) promo.hidden = Boolean(document.getElementById('homeAds')?.querySelector('.ad-card'));
+        };
         try {
             const result = await fetchAPI('get_social_links');
-            if (!result.success || !Array.isArray(result.data)) {
-                if (promo) promo.hidden = true;
-                return;
-            }
+            if (!result.success || !Array.isArray(result.data)) { updatePromoVisibility(); return; }
             if (footer) footer.replaceChildren();
             const symbols = { telegram: '➤', instagram: '◎', youtube: '▶', tiktok: '♪', facebook: 'f', x: '𝕏' };
-            let instagramUrl = '';
             result.data.forEach((item) => {
                 if (!item || typeof item.name !== 'string' || typeof item.url !== 'string') return;
                 try {
                     const destination = new URL(item.url);
-                    if (destination.protocol !== 'https:') return;
-                    if (item.name.trim().toLowerCase() === 'instagram') instagramUrl = destination.href;
-                    if (!footer) return;
+                    if (destination.protocol !== 'https:' || !footer) return;
                     const link = document.createElement('a');
-                    link.href = destination.href;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                    link.setAttribute('aria-label', item.name);
-                    link.title = item.name;
+                    link.href = destination.href; link.target = '_blank'; link.rel = 'noopener noreferrer';
+                    link.setAttribute('aria-label', item.name); link.title = item.name;
                     link.textContent = symbols[item.name.trim().toLowerCase()] || item.name.trim().slice(0, 1).toUpperCase();
                     footer.append(link);
-                } catch {
-                    return;
-                }
+                } catch { return; }
             });
-            if (promo) {
-                if (instagramUrl) {
-                    promo.href = instagramUrl;
-                    promo.hidden = false;
-                    const handle = promo.querySelector('.promo-handle');
-                    if (handle) {
-                        const path = new URL(instagramUrl).pathname.split('/').filter(Boolean).pop();
-                        handle.textContent = path ? `@${path}` : 'Instagram';
-                    }
-                } else {
-                    promo.hidden = true;
-                }
-            }
+            updatePromoVisibility();
         } catch (error) {
-            if (promo) promo.hidden = true;
+            updatePromoVisibility();
             console.error('Ijtimoiy tarmoq havolalari yuklanmadi:', error);
         }
     }
@@ -834,10 +814,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 adResponseCache.set(placement, fetchAPI('get_ads', 'GET', { placement }));
             }
             const result = await adResponseCache.get(placement);
-            if (!result.success || !Array.isArray(result.data) || !result.data.length) return;
+            if (!result.success || !Array.isArray(result.data) || !result.data.length) {
+                container.hidden = true;
+                if (placement === 'home') { const promo = document.getElementById('instagramPromo'); if (promo) promo.hidden = false; }
+                return;
+            }
             const hiddenAds = getHiddenAds();
             const visibleAds = result.data.filter((ad) => !hiddenAds[String(ad.id)]);
-            if (!visibleAds.length) return;
+            if (!visibleAds.length) {
+                container.hidden = true;
+                if (placement === 'home') { const promo = document.getElementById('instagramPromo'); if (promo) promo.hidden = false; }
+                return;
+            }
             const ad = visibleAds[adRotationIndex.value % visibleAds.length];
             adRotationIndex.value += 1;
             try {
@@ -859,7 +847,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 hide.addEventListener('click', () => {
                     hideAdFor30Days(ad.id);
                     card.remove();
-                    if (!container.querySelector('.ad-card')) container.hidden = true;
+                    if (!container.querySelector('.ad-card')) {
+                        container.hidden = true;
+                        if (placement === 'home') { const promo = document.getElementById('instagramPromo'); if (promo) promo.hidden = false; }
+                    }
                 });
                 const link = document.createElement('a');
                 link.href = destination.href;
@@ -877,6 +868,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             container.hidden = !container.querySelector('.ad-card');
+            if (placement === 'home') { const promo = document.getElementById('instagramPromo'); if (promo) promo.hidden = !container.hidden; }
         } catch (error) {
             console.error('Reklamalar yuklanmadi:', error);
         }
@@ -950,5 +942,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         status.textContent = error.message || 'Kinolarni yuklab bo‘lmadi.';
         status.classList.add('notice-error');
+        renderMoviesError(status.textContent);
+        const promo = document.getElementById('instagramPromo');
+        if (promo && !document.getElementById('homeAds')?.querySelector('.ad-card')) promo.hidden = false;
     }
 });
