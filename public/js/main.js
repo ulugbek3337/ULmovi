@@ -763,7 +763,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         await Promise.all([
             loadMovies(true),
             loadAds('home', document.getElementById('homeAds')),
-            loadAds('between_sections', document.getElementById('betweenAds')),
             loadSocialLinks(),
         ]);
         const params = new URLSearchParams(window.location.search);
