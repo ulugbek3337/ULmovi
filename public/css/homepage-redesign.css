@@ -1204,3 +1204,85 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; }
     .movie-card:hover, .hero-button:hover { transform: none; }
 }
+
+/* Specificity overrides for earlier shared homepage stylesheets */
+.hero.netflix-hero::before,
+.hero.netflix-hero::after { display: none; }
+.netflix-hero .hero-art {
+    background: #101014 !important;
+    background-image: none !important;
+}
+.netflix-hero .hero-content {
+    width: min(100%, var(--content-width));
+    padding: 70px var(--page-gutter) 62px;
+}
+.netflix-hero h1 {
+    max-width: min(700px, 62%);
+    font-size: clamp(2.1rem, 6.2vw, 4.25rem);
+    line-height: 1.05;
+    letter-spacing: -.055em;
+}
+.netflix-hero .hero-meta {
+    max-width: 560px;
+    margin: 0 0 11px;
+    color: #e5e5e8;
+    font-size: 13px;
+    font-weight: 700;
+}
+.netflix-hero .hero-description {
+    max-width: 560px;
+    margin: 0;
+    color: #c5c5cb;
+    font-size: 14px;
+    line-height: 1.65;
+}
+.netflix-hero .hero-button {
+    min-height: 48px;
+    padding: 0 21px;
+    border-radius: 999px;
+}
+.netflix-hero .hero-button-outline {
+    color: var(--text);
+    background: rgba(25,25,30,.72);
+    border-color: rgba(255,255,255,.24);
+}
+.netflix-hero .hero-backdrop {
+    position: absolute;
+    right: max(var(--page-gutter), calc((100vw - var(--content-width))/2 + var(--page-gutter)));
+    bottom: 7%;
+    inset: auto max(var(--page-gutter), calc((100vw - var(--content-width))/2 + var(--page-gutter))) 7% auto;
+    width: min(31vw, 365px);
+    height: 82%;
+    object-fit: contain;
+    object-position: center bottom;
+    opacity: 1;
+    mask-image: none;
+    border-radius: 14px;
+}
+.poster-placeholder::before { z-index: 0; pointer-events: none; }
+.movie-poster-link { z-index: 1; }
+.poster-fallback { z-index: 1; }
+.poster-play { z-index: 2; }
+@media (max-width: 767px) {
+    .netflix-hero .hero-content { padding: 60px var(--page-gutter) 55px; }
+    .netflix-hero .hero-backdrop {
+        right: 4%;
+        bottom: 8%;
+        width: 40%;
+        height: 68%;
+        opacity: .62;
+        mask-image: none;
+    }
+}
+@media (max-width: 480px) {
+    .netflix-hero .hero-content { padding: 46px var(--page-gutter) 42px; }
+    .netflix-hero h1 { max-width: 100%; font-size: clamp(2rem, 9vw, 2.7rem); }
+    .netflix-hero .hero-backdrop {
+        right: -5%;
+        bottom: 9%;
+        width: 53%;
+        height: 61%;
+        opacity: .37;
+    }
+    .ad-card img { height: 110px; }
+}
