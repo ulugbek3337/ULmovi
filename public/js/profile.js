@@ -4,6 +4,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const submit = form.querySelector('button[type="submit"]');
     const settings = document.getElementById('profileSettings');
 
+    const videoAdConsentKey = 'ulmovi.videoAdConsent.v1';
+    const videoAdConsentInput = document.getElementById('videoAdConsent');
+    const videoAdConsentStatus = document.getElementById('videoAdConsentStatus');
+
+    function loadVideoAdConsent() {
+        try {
+            videoAdConsentInput.checked = localStorage.getItem(videoAdConsentKey) === 'granted';
+        } catch {
+            videoAdConsentInput.checked = false;
+        }
+        videoAdConsentStatus.textContent = videoAdConsentInput.checked
+            ? 'Rozilik saqlandi. Video reklama faqat mavjud bo‘lsa va siz rozilikni bekor qilmagan bo‘lsangiz ko‘rsatilishi mumkin.'
+            : 'Video reklama sukut bo‘yicha o‘chirilgan.';
+    }
+
+    videoAdConsentInput.addEventListener('change', () => {
+        try {
+            if (videoAdConsentInput.checked) localStorage.setItem(videoAdConsentKey, 'granted');
+            else localStorage.removeItem(videoAdConsentKey);
+            videoAdConsentStatus.textContent = videoAdConsentInput.checked
+                ? 'Roziligingiz ushbu brauzerda eslab qolindi. Uni istalgan vaqtda bekor qilishingiz mumkin.'
+                : 'Rozilik bekor qilindi. Video reklama ko‘rsatilmaydi.';
+        } catch {
+            videoAdConsentInput.checked = false;
+            videoAdConsentStatus.textContent = 'Brauzer sozlamalari rozilikni saqlashga ruxsat bermadi.';
+        }
+    });
+
+    loadVideoAdConsent();
+
     function setMessage(text, isError = false) {
         message.textContent = text || '';
         message.classList.toggle('error', isError);
