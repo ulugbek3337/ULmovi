@@ -634,6 +634,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const hiddenAdStorageKey = 'ulmovi.hiddenAds.v1';
     const hiddenAdDurationMs = 30 * 24 * 60 * 60 * 1000;
     const adResponseCache = new Map();
+    const adRotationIndex = { value: 0 };
 
     function getHiddenAds() {
         try {
@@ -668,45 +669,46 @@ document.addEventListener('DOMContentLoaded', async () => {
             const result = await adResponseCache.get(placement);
             if (!result.success || !Array.isArray(result.data) || !result.data.length) return;
             const hiddenAds = getHiddenAds();
-            result.data.forEach((ad) => {
-                if (hiddenAds[String(ad.id)]) return;
-                try {
-                    const destination = new URL(ad.destination_url);
-                    const imageUrl = ad.image_path
-                        ? new URL(apiUrl('ad_image', { id: ad.id }))
-                        : new URL(ad.image_url);
-                    if (destination.protocol !== 'https:' || (!ad.image_path && imageUrl.protocol !== 'https:')) return;
-                    const card = document.createElement('article');
-                    card.className = 'ad-card';
-                    const label = document.createElement('span');
-                    label.className = 'ad-disclosure';
-                    label.textContent = 'Reklama';
-                    const hide = document.createElement('button');
-                    hide.type = 'button';
-                    hide.className = 'ad-hide-button';
-                    hide.textContent = 'Reklamani yashirish';
-                    hide.setAttribute('aria-label', 'Reklamani 30 kunga yashirish');
-                    hide.addEventListener('click', () => {
-                        hideAdFor30Days(ad.id);
-                        card.remove();
-                        if (!container.querySelector('.ad-card')) container.hidden = true;
-                    });
-                    const link = document.createElement('a');
-                    link.href = destination.href;
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer sponsored';
-                    const image = document.createElement('img');
-                    image.src = imageUrl.href;
-                    image.alt = ad.title || 'Homiy reklama';
-                    image.loading = 'lazy';
-                    image.decoding = 'async';
-                    link.append(image);
-                    card.append(label, hide, link);
-                    container.append(card);
-                } catch {
-                    return;
-                }
-            });
+            const visibleAds = result.data.filter((ad) => !hiddenAds[String(ad.id)]);
+            if (!visibleAds.length) return;
+            const ad = visibleAds[adRotationIndex.value % visibleAds.length];
+            adRotationIndex.value += 1;
+            try {
+                const destination = new URL(ad.destination_url);
+                const imageUrl = ad.image_path
+                    ? new URL(apiUrl('ad_image', { id: ad.id }))
+                    : new URL(ad.image_url);
+                if (destination.protocol !== 'https:' || (!ad.image_path && imageUrl.protocol !== 'https:')) return;
+                const card = document.createElement('article');
+                card.className = 'ad-card';
+                const label = document.createElement('span');
+                label.className = 'ad-disclosure';
+                label.textContent = 'Reklama';
+                const hide = document.createElement('button');
+                hide.type = 'button';
+                hide.className = 'ad-hide-button';
+                hide.textContent = 'Reklamani yashirish';
+                hide.setAttribute('aria-label', 'Reklamani 30 kunga yashirish');
+                hide.addEventListener('click', () => {
+                    hideAdFor30Days(ad.id);
+                    card.remove();
+                    if (!container.querySelector('.ad-card')) container.hidden = true;
+                });
+                const link = document.createElement('a');
+                link.href = destination.href;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer sponsored';
+                const image = document.createElement('img');
+                image.src = imageUrl.href;
+                image.alt = ad.title || 'Homiy reklama';
+                image.loading = 'lazy';
+                image.decoding = 'async';
+                link.append(image);
+                card.append(label, hide, link);
+                container.append(card);
+            } catch {
+                return;
+            }
             container.hidden = !container.querySelector('.ad-card');
         } catch (error) {
             console.error('Reklamalar yuklanmadi:', error);
