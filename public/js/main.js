@@ -1130,11 +1130,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     document.getElementById('closePlayerBtn').addEventListener('click', closePlayer);
-    if (heroElement) {
-        heroElement.addEventListener('mouseenter', () => {});
-        heroElement.addEventListener('focusin', () => {});
-        heroElement.addEventListener('focusout', () => {});
-    }
     playerModal.addEventListener('click', (event) => { if (event.target === playerModal) closePlayer(); });
     document.getElementById('closeDetailBtn').addEventListener('click', closeMovieDetails);
     detailModal.addEventListener('click', (event) => { if (event.target === detailModal) closeMovieDetails(); });
@@ -1212,5 +1207,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         status.textContent = error.message || 'Kinolarni yuklab bo‘lmadi.';
         status.classList.add('notice-error');
+        if (!document.querySelector('#moviesGrid .movie-skeleton, #moviesGrid .movie-card, #moviesGrid .empty-message')) {
+            renderGrid('moviesGrid', [], status.textContent);
+        }
     }
 });
