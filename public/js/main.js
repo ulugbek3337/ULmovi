@@ -103,12 +103,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         details.onclick = () => showDetails(movie);
         pagination.replaceChildren();
         heroSlides.forEach((slide, slideIndex) => {
-            const indicator = document.createElement('button');
-            indicator.type = 'button';
+            const indicator = document.createElement('span');
             indicator.className = 'hero-indicator' + (slideIndex === heroSlideIndex ? ' active' : '');
-            indicator.setAttribute('aria-label', (slide.title || 'Kino') + ' tavsiyasiga o‘tish');
-            indicator.setAttribute('aria-pressed', String(slideIndex === heroSlideIndex));
-            indicator.addEventListener('click', () => { renderHeroSlide(slideIndex); restartHeroTimer(); });
             pagination.append(indicator);
         });
     }
@@ -754,6 +750,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadSocialLinks() {
         const footer = document.getElementById('footerSocialLinks');
         const promo = document.getElementById('instagramPromo');
+        const instagramUrl = 'https://www.instagram.com/jorayevu436';
+        if (promo) {
+            promo.href = instagramUrl;
+            const handle = promo.querySelector('.promo-handle');
+            if (handle) handle.textContent = '@jorayevu436';
+        }
         const updatePromoVisibility = () => {
             if (promo) promo.hidden = Boolean(document.getElementById('homeAds')?.querySelector('.ad-card'));
         };
