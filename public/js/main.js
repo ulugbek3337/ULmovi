@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         return card;
     }
 
-    function renderGrid(containerId, list, emptyText = 'Bu bo‘limda hozircha kino yo‘q.') {
+    function renderGrid(containerId, list, emptyText = 'Bu bo‘limda hozircha kino yo‘q.', includeAds = false) {
         const container = document.getElementById(containerId);
         container.replaceChildren();
         if (!list.length) {
@@ -139,7 +139,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             container.append(empty);
             return;
         }
-        list.forEach((movie) => container.append(makeMovieCard(movie)));
+        list.forEach((movie, index) => {
+            container.append(makeMovieCard(movie));
+            if (includeAds && (index + 1) % 12 === 0 && index + 1 < list.length) {
+                const slot = document.createElement('div');
+                slot.className = 'ad-slot ad-slot-inline';
+                slot.setAttribute('aria-label', 'Reklama');
+                container.append(slot);
+                loadAds('between_sections', slot);
+            }
+        });
     }
 
     function renderMovies() {
@@ -149,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const text = `${movie.title || ''} ${movie.genre || ''} ${movie.description || ''}`.toLocaleLowerCase();
             return (!search || text.includes(search)) && (!genre || movie.genre === genre);
         });
-        renderGrid('moviesGrid', filtered, search || genre ? 'Qidiruv bo‘yicha kino topilmadi.' : 'Hozircha kinolar qo‘shilmagan.');
+        renderGrid('moviesGrid', filtered, search || genre ? 'Qidiruv bo‘yicha kino topilmadi.' : 'Hozircha kinolar qo‘shilmagan.', true);
         renderGrid('popularGrid', [...filtered].sort((a, b) => Number(b.likes_count) - Number(a.likes_count)).slice(0, 12));
         renderGrid('topRatedGrid', [...filtered].filter((item) => Number(item.rating_count) > 0)
             .sort((a, b) => Number(b.average_rating) - Number(a.average_rating)).slice(0, 12));
@@ -622,31 +631,83 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    const hiddenAdStorageKey = 'ulmovi.hiddenAds.v1';
+    const hiddenAdDurationMs = 30 * 24 * 60 * 60 * 1000;
+    const adResponseCache = new Map();
+
+    function getHiddenAds() {
+        try {
+            const saved = JSON.parse(localStorage.getItem(hiddenAdStorageKey) || '{}');
+            const now = Date.now();
+            const active = Object.fromEntries(Object.entries(saved).filter(([, expiresAt]) =>
+                Number.isFinite(Number(expiresAt)) && Number(expiresAt) > now));
+            if (Object.keys(active).length !== Object.keys(saved).length) {
+                localStorage.setItem(hiddenAdStorageKey, JSON.stringify(active));
+            }
+            return active;
+        } catch {
+            return {};
+        }
+    }
+
+    function hideAdFor30Days(adId) {
+        const hidden = getHiddenAds();
+        hidden[String(adId)] = Date.now() + hiddenAdDurationMs;
+        try {
+            localStorage.setItem(hiddenAdStorageKey, JSON.stringify(hidden));
+        } catch {
+            // Still remove the card from the current view if browser storage is unavailable.
+        }
+    }
+
     async function loadAds(placement, container) {
         try {
-            const result = await fetchAPI('get_ads', 'GET', { placement });
-            if (!result.success || !result.data.length) return;
+            if (!adResponseCache.has(placement)) {
+                adResponseCache.set(placement, fetchAPI('get_ads', 'GET', { placement }));
+            }
+            const result = await adResponseCache.get(placement);
+            if (!result.success || !Array.isArray(result.data) || !result.data.length) return;
+            const hiddenAds = getHiddenAds();
             result.data.forEach((ad) => {
+                if (hiddenAds[String(ad.id)]) return;
                 try {
                     const destination = new URL(ad.destination_url);
                     const imageUrl = ad.image_path
                         ? new URL(apiUrl('ad_image', { id: ad.id }))
                         : new URL(ad.image_url);
                     if (destination.protocol !== 'https:' || (!ad.image_path && imageUrl.protocol !== 'https:')) return;
+                    const card = document.createElement('article');
+                    card.className = 'ad-card';
+                    const label = document.createElement('span');
+                    label.className = 'ad-disclosure';
+                    label.textContent = 'Reklama';
+                    const hide = document.createElement('button');
+                    hide.type = 'button';
+                    hide.className = 'ad-hide-button';
+                    hide.textContent = 'Reklamani yashirish';
+                    hide.setAttribute('aria-label', 'Reklamani 30 kunga yashirish');
+                    hide.addEventListener('click', () => {
+                        hideAdFor30Days(ad.id);
+                        card.remove();
+                        if (!container.querySelector('.ad-card')) container.hidden = true;
+                    });
                     const link = document.createElement('a');
                     link.href = destination.href;
                     link.target = '_blank';
                     link.rel = 'noopener noreferrer sponsored';
                     const image = document.createElement('img');
                     image.src = imageUrl.href;
-                    image.alt = ad.title;
+                    image.alt = ad.title || 'Homiy reklama';
+                    image.loading = 'lazy';
+                    image.decoding = 'async';
                     link.append(image);
-                    container.append(link);
+                    card.append(label, hide, link);
+                    container.append(card);
                 } catch {
                     return;
                 }
             });
-            container.hidden = !container.childElementCount;
+            container.hidden = !container.querySelector('.ad-card');
         } catch (error) {
             console.error('Reklamalar yuklanmadi:', error);
         }
