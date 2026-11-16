@@ -542,3 +542,19 @@ progress { width: 100%; height: 8px; accent-color: var(--accent); }
 .chart-track { height:10px; overflow:hidden; background:var(--surface-input); border-radius:999px; }
 .chart-bar { display:block; height:100%; background:linear-gradient(90deg,var(--accent-dark),#ff7a84); border-radius:inherit; transition:width .35s ease; }
 @media(max-width:760px) { .admin-charts-grid { grid-template-columns:1fr; } }
+
+
+/* User-friendly advertising */
+.ad-slot { position: relative; }
+.ad-card { position: relative; width: 100%; min-width: 0; }
+.ad-card > a { display: block; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; }
+.ad-card img { display: block; width: 100%; max-height: 220px; object-fit: contain; background: var(--surface); }
+.ad-disclosure { position: absolute; z-index: 1; top: 9px; left: 9px; padding: 4px 8px; border-radius: 5px; color: #fff; background: rgba(0, 0, 0, .72); font-size: 11px; font-weight: 700; }
+.ad-hide-button { position: absolute; z-index: 2; top: 8px; right: 8px; padding: 6px 9px; border: 1px solid rgba(255,255,255,.28); border-radius: 6px; color: #fff; background: rgba(0,0,0,.76); font-size: 11px; cursor: pointer; }
+.ad-hide-button:hover { background: rgba(0,0,0,.94); }
+.ad-slot-inline { grid-column: 1 / -1; margin: 8px 0 18px; }
+.ad-slot-inline .ad-card img { max-height: 180px; }
+@media (max-width: 640px) {
+    .ad-card img { max-height: 150px; }
+    .ad-hide-button { font-size: 10px; padding: 5px 7px; }
+}
