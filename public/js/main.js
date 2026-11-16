@@ -142,7 +142,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 like.classList.toggle('liked', movie.is_liked);
                 like.setAttribute('aria-pressed', String(movie.is_liked));
                 like.textContent = `${movie.is_liked ? '♥' : '♡'} ${movie.likes_count}`;
-                renderPopularGrid(movies);
+                renderMovies();
             } catch (error) {
                 showNotice(error.message || 'Yoqtirish amali bajarilmadi.');
             } finally {
@@ -390,6 +390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateMovieInMemory(movieId, changes) {
         movies = movies.map((movie) => Number(movie.id) === Number(movieId) ? { ...movie, ...changes } : movie);
+        if (activeMovie && Number(activeMovie.id) === Number(movieId)) Object.assign(activeMovie, changes);
         renderMovies();
     }
 
