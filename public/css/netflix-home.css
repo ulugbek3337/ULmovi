@@ -1149,3 +1149,31 @@ button:disabled, a[aria-disabled="true"] { opacity:.55; cursor:not-allowed; }
 @media (prefers-reduced-motion: reduce) {
     .movie-skeleton { animation:none; }
 }
+
+
+/* Final layout tuning */
+.hero-shell { align-items:flex-end; }
+.netflix-hero .hero-content { margin-bottom:30px; }
+.hero-poster-wrap { align-self:flex-end; margin-bottom:12px; }
+.filters-bar.homepage-filters {
+    flex-direction:row;
+    align-items:center;
+    justify-content:space-between;
+    gap:22px;
+}
+.genre-filter-area { flex:1 1 auto; }
+.filter-selects { flex:0 0 auto; justify-content:flex-end; }
+@media (max-width: 900px) {
+    .filters-bar.homepage-filters { flex-direction:column; align-items:stretch; }
+    .genre-filter-area { width:100%; }
+    .filter-selects { width:100%; justify-content:flex-end; }
+}
+@media (max-width: 767px) {
+    .movies-grid { grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); }
+    .hero-shell { align-items:flex-end; }
+    .netflix-hero .hero-content { margin-bottom:0; }
+}
+@media (max-width: 480px) {
+    .movies-grid { grid-template-columns:repeat(2,minmax(150px,1fr)); }
+    .filter-selects { justify-content:stretch; }
+}
