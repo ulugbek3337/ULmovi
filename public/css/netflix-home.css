@@ -556,7 +556,7 @@ h1, h2, h3, .logo {
     overflow:hidden;
     background:var(--bg);
 }
-.netflix-hero .hero-art { position:absolute; inset:0; z-index:-2; overflow:hidden; }
+.netflix-hero .hero-art { position:absolute; inset:0; z-index:-2; overflow:hidden; background-image:none !important; }
 .netflix-hero .hero-backdrop {
     position:absolute;
     inset:-3%;
@@ -1174,6 +1174,6 @@ button:disabled, a[aria-disabled="true"] { opacity:.55; cursor:not-allowed; }
     .netflix-hero .hero-content { margin-bottom:0; }
 }
 @media (max-width: 480px) {
-    .movies-grid { grid-template-columns:repeat(2,minmax(150px,1fr)); }
+    .movies-grid { grid-template-columns:repeat(auto-fill,minmax(min(150px,100%),1fr)); }
     .filter-selects { justify-content:stretch; }
 }
