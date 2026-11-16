@@ -80,7 +80,7 @@ try {
     $pdo->exec('PRAGMA user_version = 6');
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($upgradedVersion !== 8) {
+    if ($upgradedVersion !== 9) {
         throw new RuntimeException('Existing v6 database did not upgrade to v9.');
     }
     $savedPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
