@@ -777,7 +777,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const author = document.createElement('strong');
                 author.textContent = comment.username || 'Foydalanuvchi';
                 const date = document.createElement('time');
-                const createdAt = new Date(comment.created_at);
+                const rawCreatedAt = String(comment.created_at || '');
+                const normalizedCreatedAt = /(?:Z|[+-]\\d{2}:\\d{2})$/i.test(rawCreatedAt)
+                    ? rawCreatedAt : `${rawCreatedAt}Z`;
+                const createdAt = new Date(normalizedCreatedAt);
                 date.dateTime = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString();
                 if (Number.isNaN(createdAt.getTime())) {
                     date.textContent = 'Sana noma’lum';
