@@ -149,3 +149,21 @@
 @media (prefers-reduced-motion: reduce) {
     *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
 }
+
+
+/* Advertising consent preference */
+.profile-consent-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 12px;
+    background: rgba(8,10,16,.45);
+}
+.profile-consent-option span { display: grid; gap: 5px; }
+.profile-consent-option strong { color: #f5f6fa; font-size: 13px; }
+.profile-consent-option small { color: #929caf; font-size: 12px; font-weight: 400; line-height: 1.5; }
+.profile-consent-option input[type="checkbox"] { width: 22px; min-width: 22px; height: 22px; min-height: 22px; accent-color: #84d9b2; cursor: pointer; }
