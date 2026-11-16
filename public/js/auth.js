@@ -53,7 +53,6 @@ function addNavigationLink(container, label, href, className = '') {
 function renderAuthenticationNavigation(user) {
     const mainNav = document.getElementById('mainNav');
     const navUserArea = document.getElementById('navUserArea');
-    const guestActions = document.querySelector('.hero-actions');
     window.currentUser = user || null;
     if (!mainNav || !navUserArea) {
         window.dispatchEvent(new CustomEvent('ulmovi:auth-changed', { detail: user || null }));
@@ -81,7 +80,6 @@ function renderAuthenticationNavigation(user) {
         register.textContent = 'Ro‘yxatdan o‘tish';
         register.dataset.authOpen = 'register';
         navUserArea.append(login, register);
-        if (guestActions) guestActions.hidden = false;
     } else {
         if (user.role === 'user') {
             addNavigationLink(mainNav, 'Profil', 'profile.html');
@@ -105,7 +103,6 @@ function renderAuthenticationNavigation(user) {
         logoutButton.textContent = 'Chiqish';
         logoutButton.addEventListener('click', logout);
         navUserArea.append(name, logoutButton);
-        if (guestActions) guestActions.hidden = true;
     }
 
     window.dispatchEvent(new CustomEvent('ulmovi:auth-changed', { detail: user || null }));
