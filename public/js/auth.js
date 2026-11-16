@@ -53,7 +53,6 @@ function addNavigationLink(container, label, href, className = '') {
 function renderAuthenticationNavigation(user) {
     const mainNav = document.getElementById('mainNav');
     const navUserArea = document.getElementById('navUserArea');
-    const guestActions = document.querySelector('.hero-actions');
     window.currentUser = user || null;
     if (!mainNav || !navUserArea) {
         window.dispatchEvent(new CustomEvent('ulmovi:auth-changed', { detail: user || null }));
@@ -64,7 +63,10 @@ function renderAuthenticationNavigation(user) {
 
     addNavigationLink(mainNav, 'Bosh sahifa', 'index.html');
     addNavigationLink(mainNav, 'Kinolar', '#latest');
-    addNavigationLink(mainNav, 'Janrlar', '#genreFilter');
+    addNavigationLink(mainNav, 'Ommabop', '#popular');
+    addNavigationLink(mainNav, 'Janrlar', '#latest');
+    addNavigationLink(mainNav, 'Tavsiyalar', '#featured');
+    addNavigationLink(mainNav, 'Biz haqimizda', '#about');
 
     if (!user) {
         const login = document.createElement('button');
@@ -78,7 +80,6 @@ function renderAuthenticationNavigation(user) {
         register.textContent = 'Ro‘yxatdan o‘tish';
         register.dataset.authOpen = 'register';
         navUserArea.append(login, register);
-        if (guestActions) guestActions.hidden = false;
     } else {
         if (user.role === 'user') {
             addNavigationLink(mainNav, 'Profil', 'profile.html');
@@ -102,7 +103,6 @@ function renderAuthenticationNavigation(user) {
         logoutButton.textContent = 'Chiqish';
         logoutButton.addEventListener('click', logout);
         navUserArea.append(name, logoutButton);
-        if (guestActions) guestActions.hidden = true;
     }
 
     window.dispatchEvent(new CustomEvent('ulmovi:auth-changed', { detail: user || null }));
@@ -147,6 +147,28 @@ async function finishAuthentication(result, form) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    const menuToggle = document.getElementById('mobileMenuToggle');
+    const navPanel = document.getElementById('navPanel');
+    function closeMobileMenu() {
+        if (!menuToggle || !navPanel) return;
+        navPanel.classList.remove('is-open');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.setAttribute('aria-label', 'Menyuni ochish');
+    }
+    menuToggle?.addEventListener('click', () => {
+        const opening = menuToggle.getAttribute('aria-expanded') !== 'true';
+        menuToggle.setAttribute('aria-expanded', String(opening));
+        menuToggle.setAttribute('aria-label', opening ? 'Menyuni yopish' : 'Menyuni ochish');
+        navPanel?.classList.toggle('is-open', opening);
+    });
+    navPanel?.addEventListener('click', (event) => {
+        if (event.target.closest('a, [data-auth-open]')) closeMobileMenu();
+    });
+    document.addEventListener('click', (event) => {
+        if (navPanel && menuToggle && !navPanel.contains(event.target) && !menuToggle.contains(event.target)) {
+            closeMobileMenu();
+        }
+    });
     document.querySelectorAll('[data-logout]').forEach((button) => {
         button.addEventListener('click', logout);
     });

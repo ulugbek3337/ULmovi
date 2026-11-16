@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const yearSelect = document.getElementById('yearFilter');
     const sortSelect = document.getElementById('sortFilter');
     const grid = document.getElementById('moviesGrid');
-    const grids = ['moviesGrid', 'popularGrid', 'topRatedGrid', 'recommendedGrid']
+    const grids = ['moviesGrid']
         .map((id) => document.getElementById(id))
         .filter(Boolean);
     if (!genreSelect || !grid || !grids.length) return;
@@ -74,8 +74,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (sort === 'rating') return getRating(b)-getRating(a);
             if (sort === 'popular') return getLikes(b)-getLikes(a);
             if (sort === 'oldest') return getYear(a)-getYear(b);
-            return getYear(b)-getYear(a);
+            return Number(a.dataset.originalOrder || 0)-Number(b.dataset.originalOrder || 0);
         });
+        const emptyYear = grid.querySelector('.year-empty-message');
+        if (cards.length && !visible.length && selectedYear) {
+            if (!emptyYear) {
+                const message = document.createElement('p');
+                message.className = 'empty-message year-empty-message';
+                message.textContent = 'Bu yilda hozircha kino yo‘q.';
+                grid.append(message);
+            }
+        } else {
+            emptyYear?.remove();
+        }
+        const status = document.getElementById('movieStatus');
+        if (status && cards.length) status.textContent = `${visible.length} ta kino`;
         const currentOrder = [...grid.querySelectorAll('.movie-card')].filter((card) => !card.hidden);
         if (visible.some((card, index) => card !== currentOrder[index])) {
             visible.forEach((card) => grid.append(card));
