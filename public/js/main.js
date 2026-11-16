@@ -340,6 +340,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderGrid('moviesGrid', filtered, search || genre ? 'Qidiruv bo‘yicha kino topilmadi.' : 'Hozircha kinolar qo‘shilmagan.');
         renderPopularGrid(filtered);
         renderHeroCarousel(movies);
+        status.classList.remove('notice-error');
         status.textContent = `${filtered.length} ta kino`;
     }
 
@@ -365,14 +366,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const params = { limit: pageSize, offset };
         if (searchInput.value.trim()) params.q = searchInput.value.trim();
         if (genreFilter.value) params.genre = genreFilter.value;
-        const result = await fetchAPI('get_movies', 'GET', params);
-        if (!result.success) throw new Error(result.error || 'Kinolarni yuklab bo‘lmadi.');
-        if (reset) movies = result.data;
-        else movies = movies.concat(result.data);
-        hasMore = result.data.length === pageSize;
-        offset += result.data.length;
-        loadMoreButton.hidden = !hasMore;
-        renderMovies();
+        try {
+            const result = await fetchAPI('get_movies', 'GET', params);
+            if (!result.success) throw new Error(result.error || 'Kinolarni yuklab bo‘lmadi.');
+            if (reset) movies = result.data;
+            else movies = movies.concat(result.data);
+            hasMore = result.data.length === pageSize;
+            offset += result.data.length;
+            loadMoreButton.hidden = !hasMore;
+            renderMovies();
+        } catch (error) {
+            if (reset) {
+                renderGrid('moviesGrid', [], error.message || 'Kinolarni yuklab bo‘lmadi.');
+                renderPopularGrid([]);
+                renderHeroCarousel([]);
+                status.textContent = error.message || 'Kinolarni yuklab bo‘lmadi.';
+                status.classList.add('notice-error');
+                loadMoreButton.hidden = true;
+            }
+            throw error;
+        }
     }
 
     function updateMovieInMemory(movieId, changes) {
