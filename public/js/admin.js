@@ -955,6 +955,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         videoInput.required = !movie;
         videoInput.closest('.form-group').hidden = Boolean(movie);
         posterInput.closest('.form-group').hidden = Boolean(movie);
+    if (window.ULmoviGoogleDrive) {
+        window.ULmoviGoogleDrive.clearSelection();
+    }
+    const movieDriveGroup = document.getElementById('movieDriveGroup');
+    if (movie && movieDriveGroup) movieDriveGroup.hidden = true;
         modal.classList.add('active');
     }
 
@@ -1035,6 +1040,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (editingMovieId) {
                 formData.append('id', String(editingMovieId));
                 result = await fetchAPI('admin_update_movie', 'POST', formData);
+            } else if (window.ULmoviGoogleDrive?.selectedFile?.id) {
+                const driveFile = window.ULmoviGoogleDrive.selectedFile;
+                formData.set('drive_file_id', driveFile.id);
+
+                if (posterInput.files[0]) {
+                    formData.set('poster', posterInput.files[0]);
+                }
+
+                progress.hidden = true;
+                result = await fetchAPI('admin_add_drive_movie', 'POST', formData);
             } else {
                 const video = videoInput.files[0];
                 if (!video) throw new Error('MP4 yoki WebM video faylini tanlang.');
@@ -1061,6 +1076,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             if (!result.success) throw new Error(result.error || 'Kino saqlanmadi.');
             modal.classList.remove('active');
+            if (window.ULmoviGoogleDrive) {
+                window.ULmoviGoogleDrive.clearSelection();
+            }
             progress.value = 0;
             progress.hidden = true;
             await refreshDashboard();
