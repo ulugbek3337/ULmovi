@@ -49,7 +49,7 @@ function database(): PDO
 function migrate_database(PDO $pdo): void
 {
     $currentVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($currentVersion > 8) {
+    if ($currentVersion > 9) {
         throw new RuntimeException('Ma’lumotlar bazasi ushbu ilova qo‘llaydigan migratsiya versiyasidan yangi.');
     }
 
@@ -323,7 +323,19 @@ function migrate_database(PDO $pdo): void
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_password_reset_attempts_key_time ON password_reset_attempts(email, ip_address, attempted_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_registration_attempts_ip_time ON registration_attempts(ip_address, attempted_at)');
     $pdo->exec("INSERT OR IGNORE INTO subscription_plans(name, description, price_minor, duration_days) VALUES ('free', 'Bepul tarif', 0, 0)");
-    $pdo->exec('PRAGMA user_version = 8');
+
+    $movieFileColumns = $pdo->query('PRAGMA table_info(movie_files)')->fetchAll(PDO::FETCH_ASSOC);
+    $movieFileColumnNames = array_column($movieFileColumns, 'name');
+
+    if (!in_array('source_type', $movieFileColumnNames, true)) {
+        $pdo->exec("ALTER TABLE movie_files ADD COLUMN source_type TEXT NOT NULL DEFAULT 'local'");
+    }
+
+    if (!in_array('drive_file_id', $movieFileColumnNames, true)) {
+        $pdo->exec('ALTER TABLE movie_files ADD COLUMN drive_file_id TEXT');
+    }
+
+    $pdo->exec('PRAGMA user_version = 9');
         if ($ownsTransaction) {
             $pdo->commit();
         }

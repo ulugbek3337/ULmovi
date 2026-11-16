@@ -40,5 +40,5 @@ Options -Indexes
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
     Header always set X-Frame-Options "DENY"
     Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' https: data:; media-src 'self' blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self'"
+    Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' https://apis.google.com https://accounts.google.com; style-src 'self'; font-src 'self' data:; img-src 'self' https: data:; media-src 'self' blob:; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://docs.google.com https://drive.google.com https://accounts.google.com; connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com"
 </IfModule>

@@ -8,6 +8,7 @@ header('X-Frame-Options: DENY');
 header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
 
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/google_drive.php';
 
 function stream_file(string $path, string $mime, string $downloadName = ''): never
 {
@@ -96,13 +97,18 @@ function require_movie_exists(PDO $pdo, int $movieId): void
 
 function video_file(PDO $pdo, int $movieId, string $quality): array
 {
-    $statement = $pdo->prepare('SELECT file_path, mime_type FROM movie_files WHERE movie_id = ? AND quality = ?');
+    $statement = $pdo->prepare('SELECT file_path, mime_type, source_type, drive_file_id FROM movie_files WHERE movie_id = ? AND quality = ?');
     $statement->execute([$movieId, $quality]);
     $file = $statement->fetch();
+
     if (!$file) {
         respond(['success' => false, 'error' => 'Tanlangan video sifati mavjud emas.'], 404);
     }
-    return [resolve_storage_file($file['file_path']), $file['mime_type']];
+
+    $sourceType = $file['source_type'] ?? 'local';
+    $path = $sourceType === 'google_drive' ? '' : resolve_storage_file($file['file_path']);
+
+    return [$path, $file['mime_type'], $sourceType, $file['drive_file_id'] ?? null];
 }
 
 function password_reset_url(string $token): ?string
@@ -875,7 +881,7 @@ try {
         $user = $action === 'download_movie' ? require_user($pdo) : current_user($pdo);
         $movieId = get_id('id');
         $quality = isset($_GET['quality']) && is_string($_GET['quality']) ? $_GET['quality'] : 'original';
-        [$path, $mime] = video_file($pdo, $movieId, $quality);
+        [$path, $mime, $sourceType, $driveFileId] = video_file($pdo, $movieId, $quality);
         if ($action === 'download_movie') {
             $statement = $pdo->prepare('SELECT title FROM movies WHERE id = ?');
             $statement->execute([$movieId]);
@@ -887,10 +893,19 @@ try {
             $statement->execute([$user['id'], $movieId]);
             $pdo->prepare('UPDATE movies SET downloads_count = downloads_count + 1 WHERE id = ?')->execute([$movieId]);
             record_activity($pdo, $user['id'], 'movie_download', (string)$movieId);
-            stream_file($path, $mime, preg_replace('/[^a-zA-Z0-9._-]/', '_', $title) . '.' . ($mime === 'video/webm' ? 'webm' : 'mp4'));
+            $downloadName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $title) . '.' . ($mime === 'video/webm' ? 'webm' : 'mp4');
+            if ($sourceType === 'google_drive') {
+                ulmovi_google_drive_stream_file((string) $driveFileId, $mime, $downloadName);
+                exit;
+            }
+            stream_file($path, $mime, $downloadName);
         }
         if (!isset($_SERVER['HTTP_RANGE'])) {
             $pdo->prepare('UPDATE movies SET views_count = views_count + 1 WHERE id = ?')->execute([$movieId]);
+        }
+        if ($sourceType === 'google_drive') {
+            ulmovi_google_drive_stream_file((string) $driveFileId, $mime);
+            exit;
         }
         stream_file($path, $mime);
     }
@@ -930,7 +945,35 @@ try {
         stream_file($path, $mime);
     }
 
-    header('Content-Type: application/json; charset=UTF-8');
+    if ($action === 'google_drive_callback') {
+    try {
+        require_super_admin($pdo);
+
+        if (isset($_GET['error'])) {
+            header('Location: /admin.html?google_drive=denied');
+            exit;
+        }
+
+        $code = isset($_GET['code']) && is_string($_GET['code']) ? $_GET['code'] : '';
+        $state = isset($_GET['state']) && is_string($_GET['state']) ? $_GET['state'] : '';
+
+        if ($code === '' || $state === '') {
+            throw new RuntimeException('OAuth callback parameters missing');
+        }
+
+        $verifier = ulmovi_google_drive_consume_oauth_state($state);
+        ulmovi_google_drive_exchange_code($code, $verifier);
+
+        header('Location: /admin.html?google_drive=connected');
+        exit;
+    } catch (Throwable $exception) {
+        error_log('Google Drive OAuth callback failed: ' . $exception->getMessage());
+        header('Location: /admin.html?google_drive=error');
+        exit;
+    }
+}
+
+header('Content-Type: application/json; charset=UTF-8');
     if ($method === 'POST') {
         $postLimit = ini_size_bytes((string)ini_get('post_max_size'));
         $contentLength = filter_var($_SERVER['CONTENT_LENGTH'] ?? 0, FILTER_VALIDATE_INT);
@@ -1540,7 +1583,120 @@ try {
             $pdo->commit();
             respond(['success' => true, 'message' => 'Kino qo‘shildi.'], 201);
 
-        case 'admin_update_movie':
+        case 'google_drive_status':
+        require_method('GET');
+        require_super_admin($pdo);
+        $driveTokens = ulmovi_google_drive_load_tokens();
+        respond([
+            'success' => true,
+            'connected' => !empty($driveTokens['refresh_token']),
+        ]);
+
+    case 'google_drive_connect':
+        require_method('POST');
+        require_super_admin($pdo);
+        respond([
+            'success' => true,
+            'url' => ulmovi_google_drive_create_oauth_url(),
+        ]);
+
+    case 'google_drive_picker_token':
+        require_method('GET');
+        require_super_admin($pdo);
+        $driveConfig = ulmovi_google_drive_config();
+        $driveAccessToken = ulmovi_google_drive_access_token();
+        respond([
+            'success' => true,
+            'access_token' => $driveAccessToken,
+            'api_key' => $driveConfig['api_key'],
+            'project_number' => $driveConfig['project_number'],
+        ]);
+
+    case 'admin_add_drive_movie':
+        require_method('POST');
+        $admin = require_super_admin($pdo);
+
+        $title = trim((string) ($_POST['title'] ?? ''));
+        $genre = trim((string) ($_POST['genre'] ?? ''));
+        $year = filter_var($_POST['year'] ?? null, FILTER_VALIDATE_INT);
+        $description = trim((string) ($_POST['description'] ?? ''));
+        $driveFileId = trim((string) ($_POST['drive_file_id'] ?? ''));
+
+        if ($title === '' || mb_strlen($title) > 180
+            || $genre === '' || mb_strlen($genre) > 80
+            || !$year || $year < 1888 || $year > ((int) date('Y') + 10)
+            || mb_strlen($description) > 5000
+            || !preg_match('/^[a-zA-Z0-9_-]{10,200}$/', $driveFileId)) {
+            respond(['success' => false, 'error' => 'Kiritilgan film ma’lumotlari noto‘g‘ri.'], 422);
+        }
+
+        $driveFile = ulmovi_google_drive_file_metadata($driveFileId);
+        $driveSize = (int) ($driveFile['size'] ?? 0);
+
+        if ($driveSize < 1 || $driveSize > 6 * 1024 * 1024 * 1024) {
+            respond(['success' => false, 'error' => 'Video hajmi ruxsat etilgan chegaradan tashqarida.'], 422);
+        }
+
+        $posterPath = null;
+        if (isset($_FILES['poster'])
+            && (int) ($_FILES['poster']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $posterPath = save_upload(
+                $_FILES['poster'],
+                ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'],
+                10 * 1024 * 1024,
+                'posters'
+            );
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $statement = $pdo->prepare(
+                'INSERT INTO movies (title, genre, year, description, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+            );
+            $statement->execute([$title, $genre, $year, $description]);
+            $movieId = (int) $pdo->lastInsertId();
+
+            if ($posterPath !== null) {
+                $pdo->prepare('UPDATE movies SET poster_path = ? WHERE id = ?')
+                    ->execute([$posterPath, $movieId]);
+            }
+
+            $fileStatement = $pdo->prepare(
+                "INSERT INTO movie_files
+                 (movie_id, quality, file_path, mime_type, file_size, created_at, source_type, drive_file_id)
+                 VALUES (?, 'original', '', ?, ?, CURRENT_TIMESTAMP, 'google_drive', ?)"
+            );
+            $fileStatement->execute([
+                $movieId,
+                $driveFile['mime_type'],
+                $driveSize,
+                $driveFileId,
+            ]);
+
+            record_activity($pdo, $admin['id'], 'movie_added_from_google_drive', (string) $movieId);
+            $pdo->commit();
+        } catch (Throwable $exception) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            if (is_string($posterPath) && $posterPath !== '') {
+                try {
+                    @unlink(resolve_storage_file($posterPath));
+                } catch (Throwable $ignored) {
+                }
+            }
+            throw $exception;
+        }
+
+        respond([
+            'success' => true,
+            'message' => 'Film Google Drive orqali qo‘shildi.',
+            'movie_id' => $movieId,
+        ], 201);
+
+    case 'admin_update_movie':
             require_method('POST');
             $admin = require_admin($pdo);
             $id = filter_var(post_string('id'), FILTER_VALIDATE_INT);
@@ -1569,7 +1725,7 @@ try {
             if ($id === false || $id < 1) {
                 respond(['success' => false, 'error' => 'Kino ID noto‘g‘ri.'], 422);
             }
-            $statement = $pdo->prepare('SELECT file_path FROM movie_files WHERE movie_id = ?');
+            $statement = $pdo->prepare("SELECT file_path FROM movie_files WHERE movie_id = ? AND COALESCE(source_type, 'local') = 'local'");
             $statement->execute([$id]);
             $files = $statement->fetchAll(PDO::FETCH_COLUMN);
             $statement = $pdo->prepare('SELECT poster_path FROM movies WHERE id = ?');
