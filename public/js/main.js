@@ -174,7 +174,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             container.append(empty);
             return;
         }
-        list.forEach((movie) => container.append(makeMovieCard(movie)));
+        list.forEach((movie, index) => {
+            const card = makeMovieCard(movie);
+            card.dataset.originalOrder = String(index);
+            container.append(card);
+        });
     }
 
     function renderPopularGrid(list) {
