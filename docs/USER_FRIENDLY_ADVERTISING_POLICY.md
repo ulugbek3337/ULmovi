@@ -10,7 +10,7 @@ Foydalanuvchi tajribasi reklama daromadidan ustun. Reklama kontentni topish, kin
 ## 2. Tasdiqlangan sozlamalar
 
 - **Chastota:** O'rtacha (medium).
-- **Video reklama:** Faqat foydalanuvchi aniq rozilik bildirsa (optional).
+- **Video reklama:** Faqat foydalanuvchi aniq rozilik bildirsa (optional); rozilik keyingi tashriflarda ham eslab qolinadi va foydalanuvchi sozlamadan bekor qila olishi kerak.
 - **Reklamani yashirish:** Ha. Har bir reklama kartasida ko'rinadigan "Yashirish" amali bo'ladi.
 
 ## 3. Joylashuv va chastota
