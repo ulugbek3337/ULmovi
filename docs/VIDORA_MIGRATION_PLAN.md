@@ -46,7 +46,7 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 ## Architecture direction
 
 - Start with a modular PHP monolith and versioned API.
-- Preserve the currently working SQLite deployment during the first migration stage; evaluate database changes separately rather than coupling them to the visual rebrand.
+- Preserve the currently working SQLite deployment during the first migration stage. VIDORA series schema v10 is additive and must pass fresh-install plus v6/v7/v9 upgrade regression tests before further series API work.
 - Keep database and media storage outside the public web root.
 - Use a storage abstraction so local storage and Google Drive can continue working, with future S3/CDN support possible.
 - Use FFmpeg/FFprobe only where the hosting environment and execution limits support them.
@@ -69,7 +69,7 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 
 ### Phase 2 — Product and backend completion
 - [ ] Audit all current backend features and API contracts.
-- [ ] Design and implement series, seasons, and episodes without breaking movie flows.
+- [x] Design the additive series schema and implement SQLite migration v10 with upgrade regression coverage.\n- [ ] Implement series, seasons, and episodes APIs without breaking movie flows.
 - [ ] Implement the internal watch-page routes and playback experience.
 - [ ] Complete Uzbek/Russian localization.
 - [ ] Review security, storage consistency, and background processing.
