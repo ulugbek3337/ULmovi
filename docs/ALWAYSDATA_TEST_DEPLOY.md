@@ -27,15 +27,8 @@ The output must show the `feature/vidora-rebrand` branch, the latest commit, and
 
 1. In Alwaysdata, open **Web > Sites** and check whether the account permits adding a second PHP site. Use a test-only address/subdomain that is not the existing `ulmovi.alwaysdata.net` production address.
 2. Set the test site's document root to `$HOME/VIDORA-test` and open the app at the test address followed by `/public/` (for example, `https://TEST-ADDRESS/public/`). This is required because the current frontend calls `../backend/index.php`. Do not change the existing production site's document root or address.
-3. In the test site's **Environment variables** field, add these exact values (replace `/home/ACCOUNT` with the account's actual home path):
-
-   ```ini
-   ULMOVI_DB_PATH=/home/ACCOUNT/VIDORA-test-data/vidora.sqlite
-   ULMOVI_STORAGE_PATH=/home/ACCOUNT/VIDORA-test-data/storage
-   ```
-
-   Do not add production paths, production database filenames, or production secrets. Keep the test site's OAuth/SMTP credentials unset until those integrations have their own test credentials.
-4. Select PHP 8.1 or newer and verify `PDO`, `pdo_sqlite`, `fileinfo`, `mbstring`, and session support. The upload feature also requires FFprobe; the current account has used `$HOME/bin/ffprobe`, but confirm it still exists.
+3. The checkout script creates a **local-only** `backend/.htaccess` with Apache `SetEnv` directives for these exact test paths. Do not commit this file or copy it into the production checkout. It keeps the SQLite database and media outside the site's document root. Do not add production paths or production secrets.
+4. Select PHP 8.1 or newer and verify `PDO`, `pdo_sqlite`, `fileinfo`, `mbstring`, and session support. The upload feature also requires FFprobe; the account has previously used `$HOME/bin/ffprobe`, but confirm it still exists.
 5. Save only the new test site's settings. Do not change the existing site's settings. Alwaysdata applies site configuration changes through its Web > Sites interface; a site restart may be needed after changing settings.
 
 Official Alwaysdata references:
