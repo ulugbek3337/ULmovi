@@ -46,10 +46,10 @@ printf '\n%s\n' "=== PREPARE ISOLATED TEST DATA ==="
 if [ -e "$TEST_DATA" ] && [ ! -d "$TEST_DATA" ]; then
     fail "VIDORA-test-data yo‘li katalog emas."
 fi
-mkdir -p "$TEST_STORAGE"
-chmod 700 "$TEST_DATA" "$TEST_STORAGE"
 [ ! -L "$TEST_STORAGE" ] || fail "Test storage symlink bo‘lishi mumkin emas."
 [ ! -L "$TEST_DB" ] || fail "Test database symlink bo‘lishi mumkin emas."
+mkdir -p "$TEST_STORAGE"
+chmod 700 "$TEST_DATA" "$TEST_STORAGE"
 case "$TEST_DB" in
     "$PRODUCTION"/*|"$PRODUCTION_STORAGE"/*) fail "Test database production papkasida bo‘lishi mumkin emas." ;;
 esac
