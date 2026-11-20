@@ -36,6 +36,9 @@ jobs:
       - name: Test profile watch progress
         run: php tests/profile_progress_smoke.php
 
+      - name: Test VIDORA public series API
+        run: php tests/series_api_smoke.php
+
       - name: Check JavaScript syntax
         run: |
           for file in public/js/*.js; do
