@@ -125,7 +125,7 @@ The episode player should:
 
 ## Implementation sequence
 
-1. [x] Add schema migration and migration smoke tests.\n7. Run full movie regression tests and manual browser checks before merging.
+1. [x] Add schema migration and migration smoke tests.
 2. Add public read-only series API and API tests.
 3. Add admin series/season/episode CRUD and authorization tests.
 4. Add episode media upload and local playback.
