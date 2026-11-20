@@ -74,3 +74,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.vidora-home-series-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:15px; }
+.vidora-home-series-card { overflow:hidden; background:var(--card-bg,#14151b); border:1px solid rgba(212,175,55,.18); border-radius:13px; }
+.vidora-home-series-art { min-height:145px; display:flex; align-items:end; padding:15px; color:#d4af37; font-size:11px; font-weight:800; letter-spacing:.2em; background:radial-gradient(circle at 75% 20%,#4a3521,#17141a 55%,#0c0d12); }
+.vidora-home-series-copy { padding:13px; }
+.vidora-home-series-copy h3 { margin:0 0 6px; font-size:15px; }
+.vidora-home-series-copy p { min-height:30px; color:var(--muted,#a5a5ad); font-size:11px; line-height:1.5; }
+.vidora-home-series-copy a { display:inline-block; padding:8px 11px; color:#08090d; background:#d4af37; border-radius:7px; font-size:11px; font-weight:750; text-decoration:none; }
