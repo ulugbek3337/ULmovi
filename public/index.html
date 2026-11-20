@@ -62,6 +62,14 @@
                 <div id="moviesGrid" class="movies-grid"></div>
                 <button id="loadMoreBtn" class="load-more-btn" type="button" hidden>Yana kinolarni ko‘rish</button>
             </section>
+            <section id="series" class="movies-section vidora-home-series">
+                <div class="section-heading">
+                    <div><p class="eyebrow">Mavsumlar va qismlar</p><h2>VIDORA seriallari</h2></div>
+                    <a class="section-all-link" href="series.html">Barcha seriallar <span aria-hidden="true">↗</span></a>
+                </div>
+                <div id="homeSeriesGrid" class="vidora-home-series-grid"></div>
+                <p id="homeSeriesStatus" class="section-note" role="status" aria-live="polite">Seriallar yuklanmoqda…</p>
+            </section>
             <section id="popular" class="movies-section">
                 <div class="section-heading"><div><p class="eyebrow">Ko‘p yoqtirilgan</p><h2>Ommabop kinolar</h2></div></div>
                 <div id="popularGrid" class="movies-grid popular-grid"></div>
@@ -153,6 +161,7 @@
         <button id="noticeToastLogin" type="button" hidden>Kirish</button>
     </div>
     <script src="js/api.js"></script>
+    <script src="js/vidora-home-series.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
     <script src="js/homepage-ui.js"></script>
