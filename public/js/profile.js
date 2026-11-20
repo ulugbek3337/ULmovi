@@ -161,8 +161,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('profileEmail').textContent = user.email || '';
         document.getElementById('profileAvatar').textContent = (user.name || 'U').trim().slice(0, 1).toLocaleUpperCase();
         document.getElementById('profileJoined').textContent = user.created_at
-            ? `ULmovi a’zosi: ${new Date(`${user.created_at.replace(' ', 'T')}Z`).toLocaleDateString('uz-UZ')}`
-            : 'ULmovi foydalanuvchisi';
+            ? `VIDORA a’zosi: ${new Date(`${user.created_at.replace(' ', 'T')}Z`).toLocaleDateString('uz-UZ')}`
+            : 'VIDORA foydalanuvchisi';
         document.getElementById('watchedCount').textContent = data.stats.watched;
         document.getElementById('favoritesCount').textContent = data.stats.favorites;
         document.getElementById('commentsCount').textContent = data.stats.comments;
