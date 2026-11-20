@@ -6,6 +6,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const seriesList = document.getElementById('seriesList');
     const seasonList = document.getElementById('seasonList');
     const episodeList = document.getElementById('episodeList');
+    const episodeUploadStatus = document.getElementById('episodeUploadStatus');
+    const episodeUploadProgress = document.getElementById('episodeUploadProgress');
+    const episodeVideoFile = document.getElementById('episodeVideoFile');
+    const uploadEpisodeVideo = document.getElementById('uploadEpisodeVideo');
     const seasonSeriesSelect = document.getElementById('seasonSeriesId');
     const episodeSeasonSelect = document.getElementById('episodeSeasonId');
     let seriesRows = [];
@@ -289,6 +293,71 @@ document.addEventListener('DOMContentLoaded', async () => {
             resetEpisodeForm();
             message('Qism saqlandi.');
         } catch (error) { message(error.message, true); }
+    });
+
+    uploadEpisodeVideo.addEventListener('click', async () => {
+        const file = episodeVideoFile.files?.[0];
+        const episodeId = Number(document.getElementById('episodeId').value || 0);
+        const selectedSeason = selectedDetail?.seasons.find((item) => Number(item.id) === selectedSeasonId);
+        const selectedEpisode = selectedSeason?.episodes.find((item) => Number(item.id) === episodeId);
+        if (!selectedEpisode) {
+            episodeUploadStatus.textContent = 'Avval ro‘yxatdan qismni tahrirlash orqali tanlang.';
+            return;
+        }
+        if (!file) {
+            episodeUploadStatus.textContent = 'Avval video faylni tanlang.';
+            return;
+        }
+        if (!['video/mp4', 'video/webm'].includes(file.type) && !/\.(mp4|webm)$/i.test(file.name)) {
+            episodeUploadStatus.textContent = 'Faqat MP4 yoki WebM fayl yuklash mumkin.';
+            return;
+        }
+        if (!window.crypto?.subtle) {
+            episodeUploadStatus.textContent = 'Xavfsiz SHA-256 tekshiruvi uchun HTTPS ulanish kerak.';
+            return;
+        }
+        uploadEpisodeVideo.disabled = true;
+        episodeUploadProgress.value = 0;
+        try {
+            const init = await api('admin_episode_upload_init', 'POST', {
+                episode_id: episodeId,
+                quality: document.getElementById('episodeVideoQuality').value,
+                total_size: file.size
+            });
+            const chunkSize = Number(init.chunk_size);
+            const chunkCount = Number(init.chunk_count);
+            if (!init.upload_id || !Number.isInteger(chunkSize) || chunkSize < 1 || !Number.isInteger(chunkCount)) {
+                throw new Error('Server yuklash sessiyasini noto‘g‘ri qaytardi.');
+            }
+            for (let index = 0; index < chunkCount; index += 1) {
+                const start = index * chunkSize;
+                const chunk = file.slice(start, Math.min(file.size, start + chunkSize));
+                const digest = await crypto.subtle.digest('SHA-256', await chunk.arrayBuffer());
+                const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+                const form = new FormData();
+                form.append('upload_id', init.upload_id);
+                form.append('chunk_index', String(index));
+                form.append('chunk_sha256', hash);
+                form.append('chunk', chunk, `episode-${episodeId}-chunk-${index}.part`);
+                await api('admin_upload_chunk', 'POST', form);
+                episodeUploadProgress.value = Math.round(((index + 1) / chunkCount) * 90);
+                episodeUploadStatus.textContent = `Video yuborilmoqda: ${index + 1}/${chunkCount} qism`;
+            }
+            const finalForm = new FormData();
+            finalForm.append('upload_id', init.upload_id);
+            const saved = await api('admin_episode_upload_finalize', 'POST', finalForm);
+            episodeUploadProgress.value = 100;
+            episodeUploadStatus.textContent = saved.message || 'Video saqlandi.';
+            await selectSeries(selectedSeriesId);
+            selectedSeasonId = Number(selectedSeason.id);
+            renderEpisodeOptions();
+            renderHierarchy();
+        } catch (error) {
+            episodeUploadStatus.textContent = error.message;
+            message(error.message, true);
+        } finally {
+            uploadEpisodeVideo.disabled = false;
+        }
     });
 
     seasonSeriesSelect.addEventListener('change', async () => {
