@@ -123,10 +123,41 @@ try {
         throw new RuntimeException('Existing movie watch history was not preserved during v9 to v11 migration.');
     }
 
-    // A v10 database remains stable on repeated migration.
+    // A v11 database remains stable on repeated migration.
     migrate_database($pdo);
     if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 11) {
         throw new RuntimeException('Repeated migration changed the v10 schema version.');
+    }
+
+    // Upgrade a genuine v10 upload_sessions layout with no episode target columns.
+    $legacyPdo = new PDO('sqlite::memory:');
+    $legacyPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $legacyPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $legacyPdo->exec('PRAGMA foreign_keys = ON');
+    $legacyPdo->exec(
+        'CREATE TABLE upload_sessions (
+            upload_id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            title TEXT NOT NULL, genre TEXT NOT NULL, year INTEGER NOT NULL,
+            description TEXT NOT NULL DEFAULT "",
+            total_size INTEGER NOT NULL CHECK(total_size BETWEEN 1 AND 6442450944),
+            chunk_size INTEGER NOT NULL CHECK(chunk_size BETWEEN 1048576 AND 16777216),
+            chunk_count INTEGER NOT NULL CHECK(chunk_count > 0),
+            status TEXT NOT NULL DEFAULT "uploading" CHECK(status IN ("uploading", "assembling", "completed", "failed", "cancelled")),
+            created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
+        )'
+    );
+    $legacyPdo->exec('PRAGMA user_version = 10');
+    migrate_database($legacyPdo);
+    $legacyColumns = array_column($legacyPdo->query('PRAGMA table_info(upload_sessions)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    foreach (['target_type', 'target_id', 'target_quality'] as $column) {
+        if (!in_array($column, $legacyColumns, true)) {
+            throw new RuntimeException('v10 to v11 migration did not add upload target column: ' . $column);
+        }
+    }
+    $legacyDefault = $legacyPdo->query("SELECT dflt_value FROM pragma_table_info('upload_sessions') WHERE name = 'target_type'")->fetchColumn();
+    if (trim((string)$legacyDefault, "'") !== 'movie') {
+        throw new RuntimeException('v10 upload sessions must preserve movie upload behavior by default.');
     }
 
     // VIDORA series schema: relationships, uniqueness, and cascading deletes.
