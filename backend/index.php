@@ -514,6 +514,60 @@ function start_admin_upload(PDO $pdo, array $admin): array
     ];
 }
 
+function start_admin_episode_upload(PDO $pdo, array $admin): array
+{
+    $episodeId = filter_var(post_string('episode_id'), FILTER_VALIDATE_INT);
+    $quality = post_string('quality');
+    $totalSize = filter_var(post_string('total_size'), FILTER_VALIDATE_INT);
+    $allowedQualities = ['original', '1080p', '720p', '480p', '360p'];
+    if ($episodeId === false || $episodeId < 1 || !in_array($quality, $allowedQualities, true)
+        || $totalSize === false || $totalSize < 1 || $totalSize > MAX_VIDEO_UPLOAD_BYTES) {
+        respond(['success' => false, 'error' => 'Qism, video sifati yoki fayl hajmi noto‘g‘ri.'], 422);
+    }
+    $episodeQuery = $pdo->prepare(
+        'SELECT e.id, e.title FROM episodes e WHERE e.id = ?'
+    );
+    $episodeQuery->execute([$episodeId]);
+    $episode = $episodeQuery->fetch();
+    if (!$episode) {
+        respond(['success' => false, 'error' => 'Qism topilmadi.'], 404);
+    }
+    $freeBytes = @disk_free_space(storage_directory());
+    $requiredBytes = ($totalSize * 2) + (64 * 1024 * 1024);
+    if ($freeBytes === false || $freeBytes < $requiredBytes) {
+        respond(['success' => false, 'error' => 'Diskda videoni yuklash va yig‘ish uchun yetarli joy yo‘q.'], 507);
+    }
+
+    cleanup_expired_upload_sessions($pdo);
+    $uploadId = bin2hex(random_bytes(16));
+    $chunkCount = (int)ceil($totalSize / VIDEO_UPLOAD_CHUNK_BYTES);
+    $now = time();
+    upload_session_directory($uploadId, true);
+    try {
+        $statement = $pdo->prepare(
+            'INSERT INTO upload_sessions(
+                upload_id, user_id, title, genre, year, description, total_size,
+                chunk_size, chunk_count, status, created_at, updated_at, expires_at,
+                target_type, target_id, target_quality
+             ) VALUES (?, ?, ?, "other", ?, "", ?, ?, ?, "uploading", ?, ?, ?, "episode", ?, ?)'
+        );
+        $statement->execute([
+            $uploadId, $admin['id'], (string)$episode['title'], (int)date('Y'),
+            $totalSize, VIDEO_UPLOAD_CHUNK_BYTES, $chunkCount, $now, $now,
+            $now + VIDEO_UPLOAD_TTL_SECONDS, $episodeId, $quality,
+        ]);
+    } catch (Throwable $exception) {
+        remove_upload_session_directory($uploadId);
+        throw $exception;
+    }
+    return [
+        'upload_id' => $uploadId,
+        'chunk_size' => VIDEO_UPLOAD_CHUNK_BYTES,
+        'chunk_count' => $chunkCount,
+        'expires_at' => $now + VIDEO_UPLOAD_TTL_SECONDS,
+    ];
+}
+
 function store_admin_upload_chunk(PDO $pdo, array $admin): array
 {
     $uploadId = post_string('upload_id');
@@ -648,7 +702,7 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
     }
 
     $storage = storage_directory();
-    $videoDirectory = $storage . DIRECTORY_SEPARATOR . 'videos';
+    $videoDirectory = $storage . DIRECTORY_SEPARATOR . (($session['target_type'] ?? 'movie') === 'episode' ? 'episode-videos' : 'videos');
     if (!is_dir($videoDirectory) && !mkdir($videoDirectory, 0700, true) && !is_dir($videoDirectory)) {
         $pdo->prepare('UPDATE upload_sessions SET status = "uploading" WHERE upload_id = ?')->execute([$uploadId]);
         throw new RuntimeException('Video saqlash papkasini yaratib bo‘lmadi.');
@@ -699,7 +753,7 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
         }
         $metadata = probe_video_metadata($pdo, $assembledPath);
         $filename = bin2hex(random_bytes(24)) . '.' . $extensions[$mime];
-        $relativeVideoPath = 'videos' . DIRECTORY_SEPARATOR . $filename;
+        $relativeVideoPath = (($session['target_type'] ?? 'movie') === 'episode' ? 'episode-videos' : 'videos') . DIRECTORY_SEPARATOR . $filename;
         $videoPath = $videoDirectory . DIRECTORY_SEPARATOR . $filename;
         if (!rename($assembledPath, $videoPath)) {
             throw new RuntimeException('Yig‘ilgan videoni doimiy saqlash joyiga ko‘chirib bo‘lmadi.');
@@ -709,6 +763,45 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
                 'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp',
             ], 10 * 1024 * 1024, 'posters');
             $posterPath = $poster['path'];
+        }
+
+        if (($session['target_type'] ?? 'movie') === 'episode') {
+            $episodeId = (int)($session['target_id'] ?? 0);
+            $quality = (string)($session['target_quality'] ?? '');
+            if ($episodeId < 1 || !in_array($quality, ['original', '1080p', '720p', '480p', '360p'], true)) {
+                throw new DomainException('Qism video yuklash ma’lumotlari noto‘g‘ri.');
+            }
+            $pdo->beginTransaction();
+            $exists = $pdo->prepare('SELECT 1 FROM episodes WHERE id = ?');
+            $exists->execute([$episodeId]);
+            if (!$exists->fetchColumn()) {
+                throw new DomainException('Yuklash vaqtida qism o‘chirilgan.');
+            }
+            $fileStatement = $pdo->prepare(
+                'INSERT INTO episode_files(episode_id, quality, file_path, mime_type, file_size, source_type, drive_file_id)
+                 VALUES (?, ?, ?, ?, ?, "local", NULL)
+                 ON CONFLICT(episode_id, quality) DO UPDATE SET
+                    file_path = excluded.file_path, mime_type = excluded.mime_type,
+                    file_size = excluded.file_size, source_type = "local", drive_file_id = NULL,
+                    created_at = CURRENT_TIMESTAMP'
+            );
+            $fileStatement->execute([$episodeId, $quality, $relativeVideoPath, $mime, (int)$session['total_size']]);
+            $pdo->prepare(
+                'UPDATE episodes SET duration_seconds = CASE
+                    WHEN duration_seconds IS NULL OR duration_seconds = 0 THEN ?
+                    ELSE duration_seconds END, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+            )->execute([(int)round($metadata['duration']), $episodeId]);
+            record_activity($pdo, (int)$admin['id'], 'episode_video_uploaded', $episodeId . ':' . $quality);
+            $pdo->prepare('UPDATE upload_sessions SET status = "completed", updated_at = ? WHERE upload_id = ?')
+                ->execute([time(), $uploadId]);
+            $pdo->commit();
+            remove_upload_session_directory($uploadId);
+            return [
+                'message' => 'Qism videosi xavfsiz saqlandi.',
+                'episode_id' => $episodeId,
+                'quality' => $quality,
+                'duration_seconds' => (int)round($metadata['duration']),
+            ];
         }
 
         $pdo->beginTransaction();
@@ -875,6 +968,36 @@ try {
         && ($userForMaintenance['role'] ?? '') !== 'super_admin'
         && !in_array($action, ['auth_csrf', 'auth_me', 'auth_login', 'auth_logout', 'auth_forgot_password', 'auth_reset_validate', 'auth_reset_password'], true)) {
         respond(['success' => false, 'error' => 'Sayt vaqtincha texnik xizmatda. Keyinroq qayta urinib ko‘ring.'], 503);
+    }
+
+    if ($action === 'stream_episode') {
+        require_method('GET');
+        $episodeId = get_id('id');
+        $quality = isset($_GET['quality']) && is_string($_GET['quality']) ? $_GET['quality'] : 'original';
+        if (!in_array($quality, ['original', '1080p', '720p', '480p', '360p'], true)) {
+            respond(['success' => false, 'error' => 'Video sifati noto‘g‘ri.'], 422);
+        }
+        $statement = $pdo->prepare(
+            "SELECT ef.file_path, ef.mime_type, ef.source_type
+             FROM episode_files ef
+             JOIN episodes e ON e.id = ef.episode_id
+             JOIN seasons se ON se.id = e.season_id
+             JOIN series s ON s.id = se.series_id
+             WHERE ef.episode_id = ? AND ef.quality = ?
+               AND e.status = 'published' AND s.status = 'published'
+             LIMIT 1"
+        );
+        $statement->execute([$episodeId, $quality]);
+        $file = $statement->fetch();
+        if (!$file || ($file['source_type'] ?? 'local') !== 'local') {
+            respond(['success' => false, 'error' => 'Bu qism videosi hozir mavjud emas.'], 404);
+        }
+        try {
+            $path = resolve_storage_file((string)$file['file_path']);
+        } catch (Throwable) {
+            respond(['success' => false, 'error' => 'Video fayli topilmadi.'], 404);
+        }
+        stream_file($path, (string)$file['mime_type']);
     }
 
     if ($action === 'stream_video' || $action === 'download_movie') {
@@ -1736,6 +1859,16 @@ header('Content-Type: application/json; charset=UTF-8');
                 $stats['average_rating'] = round((float)$pdo->query('SELECT COALESCE(AVG(score), 0) FROM ratings')->fetchColumn(), 1);
             }
             respond(['success' => true, 'data' => $stats]);
+
+        case 'admin_episode_upload_init':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            respond(['success' => true, 'data' => start_admin_episode_upload($pdo, $admin)], 201);
+
+        case 'admin_episode_upload_finalize':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            respond(['success' => true, 'data' => finalize_admin_upload($pdo, $admin)], 201);
 
         case 'admin_upload_init':
             require_method('POST');
