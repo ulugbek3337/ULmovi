@@ -15,7 +15,7 @@ Design baseline only. This document does not add database tables, API routes, or
 
 ## Data model proposal
 
-Use additive SQLite migrations. The current schema is version 9; the series implementation should introduce a new migration version only after migration tests cover both fresh databases and representative existing v6/v7/v9 databases.
+Use additive SQLite migrations. The current schema is version 10. The additive v10 migration creates series, seasons, episodes, episode files, and per-user episode progress tables. Fresh installs and upgrades from v6, v7, and v9 must pass regression tests before API work proceeds.
 
 ### `series`
 
