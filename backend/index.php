@@ -777,6 +777,11 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
             if (!$exists->fetchColumn()) {
                 throw new DomainException('Yuklash vaqtida qism o‘chirilgan.');
             }
+            $oldFileQuery = $pdo->prepare(
+                'SELECT file_path, source_type FROM episode_files WHERE episode_id = ? AND quality = ?'
+            );
+            $oldFileQuery->execute([$episodeId, $quality]);
+            $oldFile = $oldFileQuery->fetch();
             $fileStatement = $pdo->prepare(
                 'INSERT INTO episode_files(episode_id, quality, file_path, mime_type, file_size, source_type, drive_file_id)
                  VALUES (?, ?, ?, ?, ?, "local", NULL)
@@ -795,6 +800,14 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
             $pdo->prepare('UPDATE upload_sessions SET status = "completed", updated_at = ? WHERE upload_id = ?')
                 ->execute([time(), $uploadId]);
             $pdo->commit();
+            if ($oldFile && ($oldFile['source_type'] ?? 'local') === 'local'
+                && (string)$oldFile['file_path'] !== $relativeVideoPath) {
+                try {
+                    @unlink(resolve_storage_file((string)$oldFile['file_path']));
+                } catch (Throwable) {
+                    error_log('VIDORA replaced episode media could not be removed; episode=' . $episodeId);
+                }
+            }
             remove_upload_session_directory($uploadId);
             return [
                 'message' => 'Qism videosi xavfsiz saqlandi.',
