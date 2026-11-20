@@ -50,6 +50,25 @@ fi
 [ ! -L "$TEST_DB" ] || fail "Test database symlink bo‘lishi mumkin emas."
 mkdir -p "$TEST_STORAGE"
 chmod 700 "$TEST_DATA" "$TEST_STORAGE"
+
+# Keep test-only PHP environment paths local to this checkout; never commit them.
+BACKEND_ENV="$TARGET/backend/.htaccess"
+TEMP_ENV="$(mktemp "$HOME_DIR/admin/tmp/vidora-test-env.XXXXXX")"
+cat > "$TEMP_ENV" <<EOF
+# VIDORA TEST ENVIRONMENT - generated locally; do not commit.
+<IfModule mod_env.c>
+    SetEnv ULMOVI_DB_PATH $TEST_DB
+    SetEnv ULMOVI_STORAGE_PATH $TEST_STORAGE
+</IfModule>
+EOF
+if [ -e "$BACKEND_ENV" ]; then
+    [ -f "$BACKEND_ENV" ] && [ ! -L "$BACKEND_ENV" ] || fail "backend/.htaccess mavjud, ammo oddiy fayl emas."
+    grep -Fq "# VIDORA TEST ENVIRONMENT - generated locally; do not commit." "$BACKEND_ENV" \
+        || fail "backend/.htaccess oldindan mavjud va skript uni xavfsiz ravishda almashtira olmaydi."
+fi
+install -m 600 "$TEMP_ENV" "$BACKEND_ENV"
+rm -f "$TEMP_ENV"
+
 case "$TEST_DB" in
     "$PRODUCTION"/*|"$PRODUCTION_STORAGE"/*) fail "Test database production papkasida bo‘lishi mumkin emas." ;;
 esac
