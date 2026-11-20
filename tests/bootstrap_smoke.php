@@ -13,9 +13,20 @@ require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPA
 try {
     $pdo = database();
     $version = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($version !== 10) {
-        throw new RuntimeException('Expected schema version 10, got ' . $version);
+    if ($version !== 11) {
+        throw new RuntimeException('Expected schema version 11, got ' . $version);
     }
+    $uploadColumns = array_column($pdo->query('PRAGMA table_info(upload_sessions)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    foreach (['target_type', 'target_id', 'target_quality'] as $column) {
+        if (!in_array($column, $uploadColumns, true)) {
+            throw new RuntimeException('VIDORA upload target column was not created: ' . $column);
+        }
+    }
+    $targetDefault = $pdo->query("SELECT dflt_value FROM pragma_table_info('upload_sessions') WHERE name = 'target_type'")->fetchColumn();
+    if (trim((string)$targetDefault, "'") !== 'movie') {
+        throw new RuntimeException('Existing movie upload sessions must default to the movie target.');
+    }
+
     $movieFileColumns = array_column($pdo->query('PRAGMA table_info(movie_files)')->fetchAll(PDO::FETCH_ASSOC), 'name');
     foreach (['source_type', 'drive_file_id'] as $column) {
         if (!in_array($column, $movieFileColumns, true)) {
@@ -59,8 +70,8 @@ try {
     $pdo->exec('PRAGMA user_version = 7');
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($upgradedVersion !== 10) {
-        throw new RuntimeException('Existing v7 database did not upgrade to v10.');
+    if ($upgradedVersion !== 11) {
+        throw new RuntimeException('Existing v7 database did not upgrade to v11.');
     }
     $watchTable = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'watch_progress'")->fetchColumn();
     if ($watchTable !== 'watch_progress') {
@@ -80,8 +91,8 @@ try {
     $pdo->exec('PRAGMA user_version = 6');
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($upgradedVersion !== 10) {
-        throw new RuntimeException('Existing v6 database did not upgrade to v10.');
+    if ($upgradedVersion !== 11) {
+        throw new RuntimeException('Existing v6 database did not upgrade to v11.');
     }
     $savedPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
     if ((float)$savedPosition !== 123.5) {
@@ -100,21 +111,21 @@ try {
     }
     $pdo->exec('PRAGMA user_version = 9');
     migrate_database($pdo);
-    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 10) {
-        throw new RuntimeException('Existing v9 database did not upgrade to v10.');
+    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 11) {
+        throw new RuntimeException('Existing v9 database did not upgrade to v11.');
     }
     $preservedMovie = $pdo->query("SELECT title FROM movies WHERE id = " . $movieId)->fetchColumn();
     if ($preservedMovie !== 'Migration Movie') {
-        throw new RuntimeException('Existing movie data was not preserved during v9 to v10 migration.');
+        throw new RuntimeException('Existing movie data was not preserved during v9 to v11 migration.');
     }
     $preservedWatchPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
     if ((float)$preservedWatchPosition !== 123.5) {
-        throw new RuntimeException('Existing movie watch history was not preserved during v9 to v10 migration.');
+        throw new RuntimeException('Existing movie watch history was not preserved during v9 to v11 migration.');
     }
 
     // A v10 database remains stable on repeated migration.
     migrate_database($pdo);
-    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 10) {
+    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 11) {
         throw new RuntimeException('Repeated migration changed the v10 schema version.');
     }
 
