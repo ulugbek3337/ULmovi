@@ -42,5 +42,8 @@ jobs:
             node --check "$file"
           done
 
+      - name: Test VIDORA brand consistency
+        run: node tests/vidora-brand-smoke.cjs
+
       - name: Validate Composer manifest
         run: php -r '$data=json_decode(file_get_contents("composer.json"), true, 512, JSON_THROW_ON_ERROR); if (!isset($data["require"]["phpmailer/phpmailer"])) { exit(1); }'
