@@ -1,6 +1,10 @@
-# ULmovi
+# VIDORA
 
-ULmovi — PHP, SQLite, HTML, CSS va oddiy JavaScript asosida ishlaydigan, o‘zbek tilidagi kino katalogi va video tomosha qilish ilovasi.
+VIDORA — avvalgi ULmovi platformasi asosida rivojlantirilayotgan, PHP, SQLite, HTML, CSS va JavaScript texnologiyalariga tayangan kino katalogi va video tomosha qilish platformasi.
+
+> Migratsiya davomida mavjud backend va hosting sozlamalari bilan moslikni saqlash uchun `ULMOVI_` prefiksli muhit o‘zgaruvchilari hamda ayrim ichki identifikatorlar vaqtincha o‘zgarishsiz qoladi. Bu foydalanuvchiga ko‘rinadigan brend nomi emas, texnik moslik qatlamidir.
+
+VIDORA migratsiyasi va bosqichlari: [VIDORA Migration Plan](docs/VIDORA_MIGRATION_PLAN.md).
 
 ## Talablar
 
