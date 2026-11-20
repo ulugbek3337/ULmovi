@@ -23,6 +23,7 @@ for (const requirement of [
     "require_admin($pdo)",
     "resolve_storage_file((string)$file['file_path'])",
     "stream_file($path, (string)$file['mime_type'])",
+    "resolve_storage_file((string)$oldFile['file_path'])",
     "e.status = 'published' AND s.status = 'published'",
     "require_user($pdo)"
 ]) {
