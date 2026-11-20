@@ -2,7 +2,7 @@
 
 ## Status
 
-The additive SQLite schema migration v10 is implemented. Series API routes, admin CRUD, uploads, and playback are not implemented yet. Continue in small, independently tested pull-request commits.
+The additive SQLite schema migration v10 and initial public read-only series catalog endpoints are implemented. Admin CRUD, uploads, and playback are not implemented yet. Public endpoints return published series and episodes only, and never expose private file paths or Google Drive IDs. Continue in small, independently tested pull-request commits.
 
 ## Goals
 
@@ -15,7 +15,7 @@ The additive SQLite schema migration v10 is implemented. Series API routes, admi
 
 ## Data model proposal
 
-Use additive SQLite migrations. The current schema is version 10. The additive v10 migration creates series, seasons, episodes, episode files, and per-user episode progress tables. Fresh installs and upgrades from v6, v7, and v9 must pass regression tests before API work proceeds.
+Use additive SQLite migrations. The current schema is version 10. The additive v10 migration creates series, seasons, episodes, episode files, and per-user episode progress tables. Fresh installs and upgrades from v6, v7, and v9 pass the GitHub Actions migration regression suite. The public `get_series` and `get_series_details` actions are read-only; they filter out draft content and omit storage paths and Drive identifiers.
 
 ### `series`
 
