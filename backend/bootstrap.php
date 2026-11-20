@@ -49,7 +49,7 @@ function database(): PDO
 function migrate_database(PDO $pdo): void
 {
     $currentVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($currentVersion > 10) {
+    if ($currentVersion > 11) {
         throw new RuntimeException('Ma’lumotlar bazasi ushbu ilova qo‘llaydigan migratsiya versiyasidan yangi.');
     }
 
@@ -407,7 +407,19 @@ function migrate_database(PDO $pdo): void
         $pdo->exec('ALTER TABLE movie_files ADD COLUMN drive_file_id TEXT');
     }
 
-    $pdo->exec('PRAGMA user_version = 10');
+    // VIDORA episode upload target metadata (v11); existing movie uploads default to movie.
+    $uploadColumns = array_column($pdo->query('PRAGMA table_info(upload_sessions)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    if (!in_array('target_type', $uploadColumns, true)) {
+        $pdo->exec("ALTER TABLE upload_sessions ADD COLUMN target_type TEXT NOT NULL DEFAULT 'movie' CHECK(target_type IN ('movie', 'episode'))");
+    }
+    if (!in_array('target_id', $uploadColumns, true)) {
+        $pdo->exec('ALTER TABLE upload_sessions ADD COLUMN target_id INTEGER');
+    }
+    if (!in_array('target_quality', $uploadColumns, true)) {
+        $pdo->exec('ALTER TABLE upload_sessions ADD COLUMN target_quality TEXT');
+    }
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_episode_files_episode_quality ON episode_files(episode_id, quality)');
+    $pdo->exec('PRAGMA user_version = 11');
         if ($ownsTransaction) {
             $pdo->commit();
         }
