@@ -56,10 +56,8 @@ BACKEND_ENV="$TARGET/backend/.htaccess"
 TEMP_ENV="$(mktemp "$HOME_DIR/admin/tmp/vidora-test-env.XXXXXX")"
 cat > "$TEMP_ENV" <<EOF
 # VIDORA TEST ENVIRONMENT - generated locally; do not commit.
-<IfModule mod_env.c>
-    SetEnv ULMOVI_DB_PATH $TEST_DB
-    SetEnv ULMOVI_STORAGE_PATH $TEST_STORAGE
-</IfModule>
+SetEnv ULMOVI_DB_PATH $TEST_DB
+SetEnv ULMOVI_STORAGE_PATH $TEST_STORAGE
 EOF
 if [ -e "$BACKEND_ENV" ]; then
     [ -f "$BACKEND_ENV" ] && [ ! -L "$BACKEND_ENV" ] || fail "backend/.htaccess mavjud, ammo oddiy fayl emas."
