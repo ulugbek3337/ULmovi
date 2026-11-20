@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             details.append(title, meta);
             const actions = document.createElement('div');
             actions.className = 'item-actions';
-            actions.append(actionButton('Ochish', 'select-series', series.id), actionButton('Tahrirlash', 'edit-series', series.id));
+            actions.append(actionButton('Ochish', 'select-series', series.id), actionButton('Tahrirlash', 'edit-series', series.id), actionButton('O‘chirish', 'delete-series', series.id));
             item.append(details, actions);
             seriesList.append(item);
         }
@@ -191,7 +191,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const id = Number(button.dataset.id);
         try {
             if (button.dataset.action === 'select-series') await selectSeries(id);
-            if (button.dataset.action === 'edit-series') {
+            if (button.dataset.action === 'delete-series' && window.confirm('Serial, barcha mavsumlari va qismlarini o‘chirishni tasdiqlaysizmi?')) {\n                await api('admin_delete_series', 'POST', { id });\n                if (selectedSeriesId === id) { selectedSeriesId = 0; selectedSeasonId = 0; selectedDetail = null; renderHierarchy(); }\n                await loadSeries();\n                message('Serial o‘chirildi.');\n            }\n            if (button.dataset.action === 'edit-series') {
                 const row = seriesRows.find((item) => Number(item.id) === id);
                 if (row) fillForm(seriesForm, row);
                 await selectSeries(id);
