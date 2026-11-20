@@ -50,3 +50,8 @@
 .series-admin-note { margin-top: 24px; font-size: 12px; }
 @media (max-width: 1050px) { .series-admin-grid { grid-template-columns: 1fr 1fr; } .episode-panel { grid-column: 1 / -1; } }
 @media (max-width: 680px) { .series-admin-main { width: min(100% - 24px, 560px); padding-top: 26px; } .series-admin-grid { grid-template-columns: 1fr; } .episode-panel { grid-column: auto; } .series-admin-header { padding: 0 14px; } .series-admin-header-actions { gap: 10px; font-size: 12px; } .series-admin-panel { padding: 15px; } }
+
+.episode-upload-box { display: grid; gap: 9px; margin-top: 20px; padding: 14px; background: #0d0e13; border: 1px solid var(--series-border); border-radius: 10px; }
+.episode-upload-box h3 { margin: 0 0 4px; font-size: 14px; }
+.episode-upload-box progress { width: 100%; height: 8px; accent-color: var(--series-gold); }
+.upload-status { min-height: 18px; margin: 0; color: var(--series-muted); font-size: 11px; overflow-wrap: anywhere; }
