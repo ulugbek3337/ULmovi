@@ -26,7 +26,7 @@ The output must show the `feature/vidora-rebrand` branch, the latest commit, and
 ## Configure a separate test site (do not edit the live site)
 
 1. In Alwaysdata, open **Web > Sites** and check whether the account permits adding a second PHP site. Use a test-only address/subdomain that is not the existing `ulmovi.alwaysdata.net` production address.
-2. Set the test site's document root to `$HOME/VIDORA-test/public`. Do not change the existing production site's document root or address.
+2. Set the test site's document root to `$HOME/VIDORA-test` and open the app at the test address followed by `/public/` (for example, `https://TEST-ADDRESS/public/`). This is required because the current frontend calls `../backend/index.php`. Do not change the existing production site's document root or address.
 3. In the test site's **Environment variables** field, add these exact values (replace `/home/ACCOUNT` with the account's actual home path):
 
    ```ini
@@ -57,6 +57,6 @@ Official Alwaysdata references:
 
 If Alwaysdata does not allow a second site/address on the current plan, stop here and use an approved isolated test domain/site option. Never reuse the live production document root as a shortcut.
 
-## Before opening the test site
+## Deployment gate
 
-The Alwaysdata website configuration must be reviewed separately to confirm whether a second site/subdomain or a temporary test document root is supported by the current account. Do not change the existing production site's document root. A test database and test storage path must be configured independently before the test application is allowed to write data.
+Do not open the test application until the second site's document root and the two isolated environment variables have been verified. If a separate site/address is not available on the current Alwaysdata plan, pause rather than changing the production site's document root.
