@@ -2,7 +2,7 @@
 
 ## Status
 
-The additive SQLite schema migration v10 and initial public read-only series catalog endpoints are implemented. Protected admin metadata endpoints now support series/season/episode create, update, delete, and hierarchy reads. A separate VIDORA series admin page is implemented and linked from the existing admin sidebar. End-to-end browser verification, uploads, and playback are not implemented yet. Public endpoints return published series and episodes only, and never expose private file paths or Google Drive IDs. Continue in small, independently tested pull-request commits.
+The additive SQLite schema migration v11 and initial public read-only series catalog endpoints are implemented. Protected admin metadata endpoints now support series/season/episode create, update, delete, and hierarchy reads. A separate VIDORA series admin page is implemented and linked from the existing admin sidebar. The admin page now supports chunked MP4/WebM episode uploads with SHA-256 chunk checks and private local storage. Public published-episode streaming uses byte-range responses; a public catalog, watch page, signed-in progress/resume, and auto-next are implemented. End-to-end browser and Alwaysdata verification remain outstanding. Public endpoints return published series and episodes only, and never expose private file paths or Google Drive IDs. Continue in small, independently tested pull-request commits.
 
 ## Goals
 
@@ -15,7 +15,7 @@ The additive SQLite schema migration v10 and initial public read-only series cat
 
 ## Data model proposal
 
-Use additive SQLite migrations. The current schema is version 10. The additive v10 migration creates series, seasons, episodes, episode files, and per-user episode progress tables. Fresh installs and upgrades from v6, v7, and v9 pass the GitHub Actions migration regression suite. The public `get_series` and `get_series_details` actions are read-only; they filter out draft content and omit storage paths and Drive identifiers. Admin actions (`admin_get_series`, `admin_get_series_details`, `admin_save_series`, `admin_delete_series`, `admin_save_season`, `admin_delete_season`, `admin_save_episode`, and `admin_delete_episode`) require the existing admin role and POST+CSRF for writes. The separate `public/vidora-series-admin.html` page consumes these actions; it uses DOM text nodes rather than injecting API data as HTML.
+Use additive SQLite migrations. The current schema is version 11. Migration v11 adds upload target metadata to the existing chunk-upload sessions; existing movie uploads default to the `movie` target and are not redirected. The additive v10 migration creates series, seasons, episodes, episode files, and per-user episode progress tables. Migration v11 adds `target_type`, `target_id`, and `target_quality` to upload sessions, with a backward-compatible `movie` default. Fresh installs and upgrades from v6, v7, and v9 pass the GitHub Actions migration regression suite. The public `get_series` and `get_series_details` actions are read-only; they filter out draft content and omit storage paths and Drive identifiers. Admin actions (`admin_get_series`, `admin_get_series_details`, `admin_save_series`, `admin_delete_series`, `admin_save_season`, `admin_delete_season`, `admin_save_episode`, and `admin_delete_episode`) require the existing admin role and POST+CSRF for writes. The separate `public/vidora-series-admin.html` page consumes these actions; it uses DOM text nodes rather than injecting API data as HTML.
 
 ### `series`
 
@@ -71,7 +71,7 @@ Keep episode media separate from the existing `movie_files` table so movie uploa
 - `updated_at`
 - Unique constraint on (`user_id`, `episode_id`)
 
-Anonymous playback must not create user rows or persistent personal progress. If anonymous resume is later required, it must be designed separately with privacy and retention limits.
+Anonymous playback is public and does not create user rows or persistent personal progress. Signed-in progress is saved separately in `episode_watch_progress` and completed episodes clear their resume position. If anonymous resume is later required, it must be designed separately with privacy and retention limits.
 
 ## API and route proposal
 
@@ -91,7 +91,7 @@ Admin actions (admin or super-admin only):
 - `admin_create_series`, `admin_update_series`, `admin_delete_series`
 - `admin_create_season`, `admin_update_season`, `admin_delete_season`
 - `admin_create_episode`, `admin_update_episode`, `admin_delete_episode`
-- Episode media upload actions must use the existing chunked-upload security principles, with separate episode ownership checks and storage paths.
+- Episode media uploads reuse the verified chunk transport, enforce admin ownership, verify every chunk SHA-256, inspect the assembled MP4/WebM MIME and FFprobe metadata, and save into a private `episode-videos` storage directory. Public streaming is limited to published series/episodes and resolves files through the private storage path guard.
 
 All state-changing actions must require POST, CSRF validation, authorization, input validation, and audit logging. Public actions must expose published content only. Deletion must be checked for dependent media cleanup and must never delete a Google Drive object unless the user explicitly requests that behavior and the API supports it safely.
 
