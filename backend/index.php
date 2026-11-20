@@ -9,6 +9,7 @@ header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/google_drive.php';
+require_once __DIR__ . '/series.php';
 
 function stream_file(string $path, string $mime, string $downloadName = ''): never
 {
@@ -1366,6 +1367,24 @@ header('Content-Type: application/json; charset=UTF-8');
                 unset($movie);
             }
             respond(['success' => true, 'data' => $movies]);
+
+        case 'get_series':
+            require_method('GET');
+            $query = trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : '');
+            $limit = filter_var($_GET['limit'] ?? 24, FILTER_VALIDATE_INT);
+            $offset = filter_var($_GET['offset'] ?? 0, FILTER_VALIDATE_INT);
+            $limit = max(1, min(100, $limit === false ? 24 : $limit));
+            $offset = max(0, $offset === false ? 0 : $offset);
+            respond(['success' => true, 'data' => vidora_list_published_series($pdo, $query, $limit, $offset)]);
+
+        case 'get_series_details':
+            require_method('GET');
+            $seriesId = get_id('id');
+            $series = vidora_get_published_series($pdo, $seriesId);
+            if ($series === null) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            respond(['success' => true, 'data' => $series]);
 
         case 'get_comments':
             require_method('GET');
