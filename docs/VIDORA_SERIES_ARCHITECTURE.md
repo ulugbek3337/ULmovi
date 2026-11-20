@@ -2,7 +2,7 @@
 
 ## Status
 
-Design baseline only. This document does not add database tables, API routes, or change existing movie behavior. Implementation must be delivered in small, independently tested pull-request commits.
+The additive SQLite schema migration v10 is implemented. Series API routes, admin CRUD, uploads, and playback are not implemented yet. Continue in small, independently tested pull-request commits.
 
 ## Goals
 
@@ -125,7 +125,7 @@ The episode player should:
 
 ## Implementation sequence
 
-1. Add schema migration and migration smoke tests only.
+1. [x] Add schema migration and migration smoke tests.\n7. Run full movie regression tests and manual browser checks before merging.
 2. Add public read-only series API and API tests.
 3. Add admin series/season/episode CRUD and authorization tests.
 4. Add episode media upload and local playback.
