@@ -6,8 +6,8 @@ require_once __DIR__ . '/../backend/bootstrap.php';
 
 $pdo = database();
 $version = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-if ($version !== 10) {
-    throw new RuntimeException('Profile schema migration version is not 10.');
+if ($version !== 11) {
+    throw new RuntimeException('Profile schema migration version is not 11.');
 }
 
 $pdo->exec("INSERT INTO users(name, email, password) VALUES ('Test User', 'profile-smoke@example.test', 'hash')");
