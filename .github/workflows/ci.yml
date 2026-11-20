@@ -48,6 +48,9 @@ jobs:
       - name: Test VIDORA brand consistency
         run: node tests/vidora-brand-smoke.cjs
 
+      - name: Test VIDORA series admin UI
+        run: node tests/vidora-series-admin-smoke.cjs
+
       - name: Validate VIDORA test deployment script
         run: bash -n scripts/update-vidora-test.sh
 
