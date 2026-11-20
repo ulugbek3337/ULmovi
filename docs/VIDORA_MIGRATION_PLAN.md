@@ -100,4 +100,4 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 
 ## Current scope and safety boundary
 
-This branch contains the VIDORA brand foundation, additive SQLite schema v10, and initial public read-only series catalog endpoints. It is not a complete VIDORA release and must not be deployed to production. Admin CRUD, episode upload and playback, watch pages, and browser/Alwaysdata testing remain outstanding. The existing ULmovi production application and storage remain untouched until the test and production acceptance gates are met.
+This branch contains the VIDORA brand foundation, additive SQLite schema v10, public read-only series catalog endpoints, and protected admin metadata API endpoints. It is not a complete VIDORA release and must not be deployed to production. Admin interface, episode upload and playback, watch pages, and browser/Alwaysdata testing remain outstanding. The existing ULmovi production application and storage remain untouched until the test and production acceptance gates are met.
