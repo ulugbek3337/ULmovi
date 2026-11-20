@@ -5,6 +5,7 @@ const homepage = fs.readFileSync('public/index.html', 'utf8');
 const admin = fs.readFileSync('public/admin.html', 'utf8');
 const profile = fs.readFileSync('public/profile.html', 'utf8');
 const auth = fs.readFileSync('public/js/auth.js', 'utf8');
+const profileJs = fs.readFileSync('public/js/profile.js', 'utf8');
 const brandCss = fs.readFileSync('public/css/vidora-brand.css', 'utf8');
 
 assert.match(homepage, /<title>VIDORA — Feel the World of Cinema<\/title>/);
@@ -24,6 +25,9 @@ assert.match(profile, /css\/vidora-brand\.css/);
 assert.doesNotMatch(profile, /ULmovi|ULMOVI/);
 
 assert.match(auth, /VIDORA hisobini yarating/);
+assert.match(profileJs, /VIDORA a’zosi/);
+assert.match(profileJs, /VIDORA foydalanuvchisi/);
+assert.doesNotMatch(profileJs, /ULmovi a’zosi|ULmovi foydalanuvchisi/);
 assert.match(brandCss, /--vidora-bg:\s*#08090d/i);
 assert.match(brandCss, /--vidora-gold:\s*#d4af37/i);
 assert.match(brandCss, /--vidora-graphite:\s*#1e1e24/i);
