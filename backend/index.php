@@ -1509,6 +1509,60 @@ header('Content-Type: application/json; charset=UTF-8');
             }
             respond(['success' => true, 'data' => $series]);
 
+        case 'get_episode_progress':
+            require_method('GET');
+            $user = require_user($pdo);
+            $episodeId = get_id('id');
+            $statement = $pdo->prepare(
+                "SELECT p.position_seconds, p.duration_seconds, p.updated_at
+                 FROM episode_watch_progress p
+                 JOIN episodes e ON e.id = p.episode_id
+                 JOIN seasons se ON se.id = e.season_id
+                 JOIN series s ON s.id = se.series_id
+                 WHERE p.user_id = ? AND p.episode_id = ?
+                   AND e.status = 'published' AND s.status = 'published'"
+            );
+            $statement->execute([$user['id'], $episodeId]);
+            $progress = $statement->fetch();
+            respond(['success' => true, 'data' => $progress ?: null]);
+
+        case 'save_episode_progress':
+            require_method('POST');
+            $user = require_user($pdo);
+            $episodeId = filter_var(post_string('episode_id'), FILTER_VALIDATE_INT);
+            $position = filter_var(post_string('position_seconds'), FILTER_VALIDATE_FLOAT);
+            if ($episodeId === false || $episodeId < 1 || $position === false || !is_finite((float)$position)
+                || $position < 0 || $position > 86400) {
+                respond(['success' => false, 'error' => 'Tomosha progress ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare(
+                "SELECT e.duration_seconds FROM episodes e
+                 JOIN seasons se ON se.id = e.season_id
+                 JOIN series s ON s.id = se.series_id
+                 WHERE e.id = ? AND e.status = 'published' AND s.status = 'published'"
+            );
+            $statement->execute([$episodeId]);
+            $duration = $statement->fetchColumn();
+            if ($duration === false) {
+                respond(['success' => false, 'error' => 'Ochiq qism topilmadi.'], 404);
+            }
+            $duration = max(0.0, (float)$duration);
+            $position = min((float)$position, $duration > 0 ? $duration : 86400.0);
+            if ($duration > 0 && $position >= max(0, $duration - 10)) {
+                $pdo->prepare('DELETE FROM episode_watch_progress WHERE user_id = ? AND episode_id = ?')
+                    ->execute([$user['id'], $episodeId]);
+                respond(['success' => true, 'data' => ['completed' => true]]);
+            }
+            $pdo->prepare(
+                'INSERT INTO episode_watch_progress(user_id, episode_id, position_seconds, duration_seconds, updated_at)
+                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                 ON CONFLICT(user_id, episode_id) DO UPDATE SET
+                    position_seconds = excluded.position_seconds,
+                    duration_seconds = excluded.duration_seconds,
+                    updated_at = CURRENT_TIMESTAMP'
+            )->execute([$user['id'], $episodeId, $position, $duration]);
+            respond(['success' => true, 'data' => ['position_seconds' => $position, 'duration_seconds' => $duration]]);
+
         case 'admin_get_series':
             require_method('GET');
             require_admin($pdo);
@@ -1884,7 +1938,8 @@ header('Content-Type: application/json; charset=UTF-8');
             }
             $session = owned_upload_session($pdo, $uploadId, (int)$admin['id']);
             if ($session['status'] === 'assembling' && time() - (int)$session['updated_at'] > 1800) {
-                @unlink(storage_directory() . DIRECTORY_SEPARATOR . 'videos' . DIRECTORY_SEPARATOR . '.upload-' . $uploadId . '.assembling');
+                $uploadFolder = ($session['target_type'] ?? 'movie') === 'episode' ? 'episode-videos' : 'videos';
+                @unlink(storage_directory() . DIRECTORY_SEPARATOR . $uploadFolder . DIRECTORY_SEPARATOR . '.upload-' . $uploadId . '.assembling');
                 $pdo->prepare('UPDATE upload_sessions SET status = "uploading", updated_at = ? WHERE upload_id = ? AND status = "assembling"')
                     ->execute([time(), $uploadId]);
                 $session['status'] = 'uploading';
