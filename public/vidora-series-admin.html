@@ -85,6 +85,22 @@
                     <select id="episodeStatus" name="status"><option value="draft">Qoralama</option><option value="published">Nashr qilingan</option><option value="archived">Arxivlangan</option></select>
                     <button class="gold-button" type="submit">Qismni saqlash</button>
                 </form>
+                <section class="episode-upload-box" aria-labelledby="episodeUploadTitle">
+                    <h3 id="episodeUploadTitle">Qism videosini yuklash</h3>
+                    <label for="episodeVideoFile">MP4 yoki WebM video</label>
+                    <input id="episodeVideoFile" type="file" accept="video/mp4,video/webm,.mp4,.webm">
+                    <label for="episodeVideoQuality">Video sifati</label>
+                    <select id="episodeVideoQuality">
+                        <option value="original">Original</option>
+                        <option value="1080p">1080p</option>
+                        <option value="720p">720p</option>
+                        <option value="480p">480p</option>
+                        <option value="360p">360p</option>
+                    </select>
+                    <button id="uploadEpisodeVideo" type="button" class="gold-button">Videoni yuklash</button>
+                    <progress id="episodeUploadProgress" value="0" max="100"></progress>
+                    <p id="episodeUploadStatus" class="upload-status" role="status" aria-live="polite">Avval qism tanlang.</p>
+                </section>
                 <div id="episodeList" class="hierarchy-list"><p class="empty-state">Avval mavsum tanlang.</p></div>
             </article>
         </section>
