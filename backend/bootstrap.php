@@ -49,7 +49,7 @@ function database(): PDO
 function migrate_database(PDO $pdo): void
 {
     $currentVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($currentVersion > 9) {
+    if ($currentVersion > 10) {
         throw new RuntimeException('Ma’lumotlar bazasi ushbu ilova qo‘llaydigan migratsiya versiyasidan yangi.');
     }
 
@@ -315,6 +315,78 @@ function migrate_database(PDO $pdo): void
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_comments_movie_visible ON comments(movie_id, is_hidden, created_at DESC)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_activity_created_at ON activity_logs(created_at DESC)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_watch_progress_user_updated ON watch_progress(user_id, updated_at DESC)');
+    // VIDORA series schema (v10). Additive tables leave movie tables unchanged.
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS series (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            year INTEGER,
+            genre TEXT,
+            poster_path TEXT,
+            poster_url TEXT,
+            status TEXT NOT NULL DEFAULT "draft" CHECK(status IN ("draft", "published", "archived")),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )'
+    );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS seasons (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            series_id INTEGER NOT NULL REFERENCES series(id) ON DELETE CASCADE,
+            season_number INTEGER NOT NULL CHECK(season_number > 0),
+            title TEXT,
+            description TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(series_id, season_number)
+        )'
+    );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS episodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            season_id INTEGER NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+            episode_number INTEGER NOT NULL CHECK(episode_number > 0),
+            title TEXT NOT NULL,
+            description TEXT,
+            duration_seconds INTEGER CHECK(duration_seconds IS NULL OR duration_seconds >= 0),
+            poster_path TEXT,
+            status TEXT NOT NULL DEFAULT "draft" CHECK(status IN ("draft", "published", "archived")),
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(season_id, episode_number)
+        )'
+    );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS episode_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            episode_id INTEGER NOT NULL REFERENCES episodes(id) ON DELETE CASCADE,
+            quality TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            mime_type TEXT NOT NULL,
+            file_size INTEGER NOT NULL CHECK(file_size >= 0),
+            source_type TEXT NOT NULL DEFAULT "local" CHECK(source_type IN ("local", "google_drive")),
+            drive_file_id TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(episode_id, quality)
+        )'
+    );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS episode_watch_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            episode_id INTEGER NOT NULL REFERENCES episodes(id) ON DELETE CASCADE,
+            position_seconds REAL NOT NULL DEFAULT 0 CHECK(position_seconds >= 0),
+            duration_seconds REAL NOT NULL DEFAULT 0 CHECK(duration_seconds >= 0),
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, episode_id)
+        )'
+    );
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_series_status_created ON series(status, created_at DESC)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_seasons_series_number ON seasons(series_id, season_number)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_episodes_season_number ON episodes(season_id, episode_number)');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_episode_watch_progress_user_updated ON episode_watch_progress(user_id, updated_at DESC)');
+
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_key_time ON login_attempts(email, ip_address, attempted_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts(email, attempted_at)');
     $pdo->exec('CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip_address, attempted_at)');
@@ -335,7 +407,7 @@ function migrate_database(PDO $pdo): void
         $pdo->exec('ALTER TABLE movie_files ADD COLUMN drive_file_id TEXT');
     }
 
-    $pdo->exec('PRAGMA user_version = 9');
+    $pdo->exec('PRAGMA user_version = 10');
         if ($ownsTransaction) {
             $pdo->commit();
         }
