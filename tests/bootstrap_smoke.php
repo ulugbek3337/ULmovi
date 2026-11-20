@@ -208,7 +208,7 @@ try {
     }
 
     // A database created by a newer application must be rejected.
-    $pdo->exec('PRAGMA user_version = 11');
+    $pdo->exec('PRAGMA user_version = 12');
     try {
         migrate_database($pdo);
         throw new RuntimeException('A newer database schema version was unexpectedly accepted.');
