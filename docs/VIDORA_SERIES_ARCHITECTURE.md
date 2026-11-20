@@ -2,7 +2,7 @@
 
 ## Status
 
-The additive SQLite schema migration v10 and initial public read-only series catalog endpoints are implemented. Protected admin metadata endpoints now support series/season/episode create, update, delete, and hierarchy reads. The admin UI, uploads, and playback are not implemented yet. Public endpoints return published series and episodes only, and never expose private file paths or Google Drive IDs. Continue in small, independently tested pull-request commits.
+The additive SQLite schema migration v10 and initial public read-only series catalog endpoints are implemented. Protected admin metadata endpoints now support series/season/episode create, update, delete, and hierarchy reads. A separate VIDORA series admin page is implemented and linked from the existing admin sidebar. End-to-end browser verification, uploads, and playback are not implemented yet. Public endpoints return published series and episodes only, and never expose private file paths or Google Drive IDs. Continue in small, independently tested pull-request commits.
 
 ## Goals
 
@@ -15,7 +15,7 @@ The additive SQLite schema migration v10 and initial public read-only series cat
 
 ## Data model proposal
 
-Use additive SQLite migrations. The current schema is version 10. The additive v10 migration creates series, seasons, episodes, episode files, and per-user episode progress tables. Fresh installs and upgrades from v6, v7, and v9 pass the GitHub Actions migration regression suite. The public `get_series` and `get_series_details` actions are read-only; they filter out draft content and omit storage paths and Drive identifiers. Admin actions (`admin_get_series`, `admin_get_series_details`, `admin_save_series`, `admin_delete_series`, `admin_save_season`, `admin_delete_season`, `admin_save_episode`, and `admin_delete_episode`) require the existing admin role and POST+CSRF for writes.
+Use additive SQLite migrations. The current schema is version 10. The additive v10 migration creates series, seasons, episodes, episode files, and per-user episode progress tables. Fresh installs and upgrades from v6, v7, and v9 pass the GitHub Actions migration regression suite. The public `get_series` and `get_series_details` actions are read-only; they filter out draft content and omit storage paths and Drive identifiers. Admin actions (`admin_get_series`, `admin_get_series_details`, `admin_save_series`, `admin_delete_series`, `admin_save_season`, `admin_delete_season`, `admin_save_episode`, and `admin_delete_episode`) require the existing admin role and POST+CSRF for writes. The separate `public/vidora-series-admin.html` page consumes these actions; it uses DOM text nodes rather than injecting API data as HTML.
 
 ### `series`
 
