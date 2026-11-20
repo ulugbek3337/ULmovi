@@ -13,7 +13,7 @@ const home = fs.readFileSync(path.join(root, 'public/index.html'), 'utf8');
 for (const action of [
     "case 'admin_episode_upload_init'",
     "case 'admin_episode_upload_finalize'",
-    "case 'stream_episode'",
+    "if ($action === 'stream_episode')",
     "case 'get_episode_progress'",
     "case 'save_episode_progress'"
 ]) {
