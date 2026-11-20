@@ -69,7 +69,7 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 
 ### Phase 2 — Product and backend completion
 - [ ] Audit all current backend features and API contracts.
-- [x] Design the additive series schema and implement SQLite migration v10 with upgrade regression coverage.\n- [ ] Implement series, seasons, and episodes APIs without breaking movie flows.
+- [x] Design the additive series schema and implement SQLite migration v10 with upgrade regression coverage.\n- [x] Implement public series catalog and protected admin metadata APIs without changing movie routes.
 - [x] Implement public series catalog, internal watch page, and published-episode byte-range playback.
 - [x] Add chunked admin episode uploads with SHA-256 validation and private storage.
 - [x] Add optional signed-in episode progress, resume, and auto-next.
@@ -77,8 +77,8 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 - [ ] Review security, storage consistency, and background processing.
 
 ### Phase 3 — Automated and manual validation
-- [ ] PHP syntax and static checks (pending CI confirmation).\n- [ ] Run SQLite v10 migration regression suite in GitHub Actions.
-- [ ] JavaScript syntax and frontend smoke tests.
+- [x] PHP syntax and static checks in GitHub Actions.\n- [x] Run SQLite v11 migration regression suite in GitHub Actions.
+- [x] JavaScript syntax and frontend smoke tests in GitHub Actions.
 - [ ] Authentication and authorization regression tests.
 - [ ] Movie upload, poster, Google Drive, FFmpeg, and playback tests.
 - [ ] Mobile and desktop browser tests.
