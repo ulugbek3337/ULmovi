@@ -94,6 +94,24 @@ try {
         }
     }
 
+    // Upgrade an existing v9 movie database in place; preserve its data.
+    foreach (['episode_watch_progress', 'episode_files', 'episodes', 'seasons', 'series'] as $tableName) {
+        $pdo->exec('DROP TABLE ' . $tableName);
+    }
+    $pdo->exec('PRAGMA user_version = 9');
+    migrate_database($pdo);
+    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 10) {
+        throw new RuntimeException('Existing v9 database did not upgrade to v10.');
+    }
+    $preservedMovie = $pdo->query("SELECT title FROM movies WHERE id = " . $movieId)->fetchColumn();
+    if ($preservedMovie !== 'Migration Movie') {
+        throw new RuntimeException('Existing movie data was not preserved during v9 to v10 migration.');
+    }
+    $preservedWatchPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
+    if ((float)$preservedWatchPosition !== 123.5) {
+        throw new RuntimeException('Existing movie watch history was not preserved during v9 to v10 migration.');
+    }
+
     // A v10 database remains stable on repeated migration.
     migrate_database($pdo);
     if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 10) {
