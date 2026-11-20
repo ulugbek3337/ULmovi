@@ -75,7 +75,7 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 - [ ] Review security, storage consistency, and background processing.
 
 ### Phase 3 — Automated and manual validation
-- [ ] PHP syntax and static checks.
+- [ ] PHP syntax and static checks (pending CI confirmation).\n- [ ] Run SQLite v10 migration regression suite in GitHub Actions.
 - [ ] JavaScript syntax and frontend smoke tests.
 - [ ] Authentication and authorization regression tests.
 - [ ] Movie upload, poster, Google Drive, FFmpeg, and playback tests.
