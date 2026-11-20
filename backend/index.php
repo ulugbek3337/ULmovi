@@ -1399,6 +1399,39 @@ header('Content-Type: application/json; charset=UTF-8');
             )->fetchAll();
             respond(['success' => true, 'data' => $seriesRows]);
 
+        case 'admin_get_series_details':
+            require_method('GET');
+            require_admin($pdo);
+            $seriesId = get_id('id');
+            $statement = $pdo->prepare(
+                'SELECT id, title, description, year, genre, poster_url, status, created_at, updated_at
+                 FROM series WHERE id = ?'
+            );
+            $statement->execute([$seriesId]);
+            $series = $statement->fetch();
+            if (!$series) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            $statement = $pdo->prepare(
+                'SELECT id, season_number, title, description, created_at, updated_at
+                 FROM seasons WHERE series_id = ? ORDER BY season_number ASC'
+            );
+            $statement->execute([$seriesId]);
+            $seasons = $statement->fetchAll();
+            $episodeStatement = $pdo->prepare(
+                "SELECT e.id, e.episode_number, e.title, e.description, e.duration_seconds,
+                        e.status, e.created_at, e.updated_at,
+                        (SELECT COUNT(*) FROM episode_files ef WHERE ef.episode_id = e.id) AS file_count
+                 FROM episodes e WHERE e.season_id = ? ORDER BY e.episode_number ASC"
+            );
+            foreach ($seasons as &$season) {
+                $episodeStatement->execute([(int)$season['id']]);
+                $season['episodes'] = $episodeStatement->fetchAll();
+            }
+            unset($season);
+            $series['seasons'] = $seasons;
+            respond(['success' => true, 'data' => $series]);
+
         case 'admin_save_series':
             require_method('POST');
             $admin = require_admin($pdo);
