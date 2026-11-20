@@ -60,7 +60,7 @@ try {
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
     if ($upgradedVersion !== 10) {
-        throw new RuntimeException('Existing v7 database did not upgrade to v9.');
+        throw new RuntimeException('Existing v7 database did not upgrade to v10.');
     }
     $watchTable = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'watch_progress'")->fetchColumn();
     if ($watchTable !== 'watch_progress') {
@@ -81,7 +81,7 @@ try {
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
     if ($upgradedVersion !== 10) {
-        throw new RuntimeException('Existing v6 database did not upgrade to v9.');
+        throw new RuntimeException('Existing v6 database did not upgrade to v10.');
     }
     $savedPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
     if ((float)$savedPosition !== 123.5) {
@@ -96,7 +96,7 @@ try {
 
     // A v10 database remains stable on repeated migration.
     migrate_database($pdo);
-    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 9) {
+    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 10) {
         throw new RuntimeException('Repeated migration changed the v10 schema version.');
     }
 
