@@ -191,7 +191,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const id = Number(button.dataset.id);
         try {
             if (button.dataset.action === 'select-series') await selectSeries(id);
-            if (button.dataset.action === 'delete-series' && window.confirm('Serial, barcha mavsumlari va qismlarini o‘chirishni tasdiqlaysizmi?')) {\n                await api('admin_delete_series', 'POST', { id });\n                if (selectedSeriesId === id) { selectedSeriesId = 0; selectedSeasonId = 0; selectedDetail = null; renderHierarchy(); }\n                await loadSeries();\n                message('Serial o‘chirildi.');\n            }\n            if (button.dataset.action === 'edit-series') {
+            if (button.dataset.action === 'delete-series' && window.confirm('Serial, barcha mavsumlari va qismlarini o‘chirishni tasdiqlaysizmi?')) {
+                await api('admin_delete_series', 'POST', { id });
+                if (selectedSeriesId === id) { selectedSeriesId = 0; selectedSeasonId = 0; selectedDetail = null; renderHierarchy(); }
+                await loadSeries();
+                message('Serial o‘chirildi.');
+            }
+            if (button.dataset.action === 'edit-series') {
                 const row = seriesRows.find((item) => Number(item.id) === id);
                 if (row) fillForm(seriesForm, row);
                 await selectSeries(id);
