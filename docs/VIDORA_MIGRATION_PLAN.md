@@ -46,7 +46,7 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 ## Architecture direction
 
 - Start with a modular PHP monolith and versioned API.
-- Preserve the currently working SQLite deployment during the first migration stage. VIDORA series schema v10 is additive and must pass fresh-install plus v6/v7/v9 upgrade regression tests before further series API work.
+- Preserve the currently working SQLite deployment during the first migration stage. VIDORA series schema v11 and upload-session extension v11 are additive and must pass fresh-install plus v6/v7/v9 upgrade regression tests before further series API work.
 - Keep database and media storage outside the public web root.
 - Use a storage abstraction so local storage and Google Drive can continue working, with future S3/CDN support possible.
 - Use FFmpeg/FFprobe only where the hosting environment and execution limits support them.
@@ -70,7 +70,9 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 ### Phase 2 — Product and backend completion
 - [ ] Audit all current backend features and API contracts.
 - [x] Design the additive series schema and implement SQLite migration v10 with upgrade regression coverage.\n- [ ] Implement series, seasons, and episodes APIs without breaking movie flows.
-- [ ] Implement the internal watch-page routes and playback experience.
+- [x] Implement public series catalog, internal watch page, and published-episode byte-range playback.
+- [x] Add chunked admin episode uploads with SHA-256 validation and private storage.
+- [x] Add optional signed-in episode progress, resume, and auto-next.
 - [ ] Complete Uzbek/Russian localization.
 - [ ] Review security, storage consistency, and background processing.
 
@@ -100,4 +102,4 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 
 ## Current scope and safety boundary
 
-This branch contains the VIDORA brand foundation, additive SQLite schema v10, public read-only series catalog endpoints, and protected admin metadata API endpoints. It is not a complete VIDORA release and must not be deployed to production. End-to-end browser verification, episode upload and playback, watch pages, and Alwaysdata testing remain outstanding. The existing ULmovi production application and storage remain untouched until the test and production acceptance gates are met.
+This branch contains the VIDORA brand foundation, additive SQLite schema v11, public series catalog, protected admin metadata API, chunked local episode uploads, published-episode streaming, watch page, and optional signed-in progress/resume/auto-next. It is not a complete VIDORA release and must not be deployed to production. End-to-end browser verification, upload/playback tests on Alwaysdata, Google Drive episode integration, and production migration remain outstanding. The existing ULmovi production application and storage remain untouched until the test and production acceptance gates are met.
