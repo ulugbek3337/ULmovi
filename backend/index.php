@@ -1386,6 +1386,205 @@ header('Content-Type: application/json; charset=UTF-8');
             }
             respond(['success' => true, 'data' => $series]);
 
+        case 'admin_get_series':
+            require_method('GET');
+            require_admin($pdo);
+            $seriesRows = $pdo->query(
+                "SELECT s.id, s.title, s.description, s.year, s.genre, s.poster_url, s.status,
+                        s.created_at, s.updated_at,
+                        (SELECT COUNT(*) FROM seasons se WHERE se.series_id = s.id) AS season_count,
+                        (SELECT COUNT(*) FROM seasons se JOIN episodes e ON e.season_id = se.id
+                         WHERE se.series_id = s.id) AS episode_count
+                 FROM series s ORDER BY s.updated_at DESC, s.id DESC"
+            )->fetchAll();
+            respond(['success' => true, 'data' => $seriesRows]);
+
+        case 'admin_save_series':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $id = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            $id = $id === false || $id < 1 ? 0 : $id;
+            $title = trim(post_string('title'));
+            $description = trim(post_string('description'));
+            $genre = trim(post_string('genre'));
+            $yearRaw = trim(post_string('year'));
+            $year = $yearRaw === '' ? null : filter_var($yearRaw, FILTER_VALIDATE_INT);
+            $posterUrl = trim(post_string('poster_url'));
+            $status = post_string('status');
+            if ($title === '' || mb_strlen($title) > 200 || mb_strlen($description) > 5000
+                || mb_strlen($genre) > 100 || ($yearRaw !== '' && ($year === false || $year < 1888 || $year > (int)date('Y') + 10))
+                || !valid_https_url($posterUrl) || !in_array($status, ['draft', 'published', 'archived'], true)) {
+                respond(['success' => false, 'error' => 'Serial ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            if ($id > 0) {
+                $statement = $pdo->prepare(
+                    'UPDATE series SET title = ?, description = ?, year = ?, genre = ?, poster_url = ?, status = ?,
+                     updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+                );
+                $statement->execute([$title, $description, $year, $genre, $posterUrl, $status, $id]);
+                $exists = $pdo->prepare('SELECT 1 FROM series WHERE id = ?');
+                $exists->execute([$id]);
+                if (!$exists->fetchColumn()) {
+                    respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+                }
+                $seriesId = $id;
+            } else {
+                $statement = $pdo->prepare(
+                    'INSERT INTO series(title, description, year, genre, poster_url, status, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+                );
+                $statement->execute([$title, $description, $year, $genre, $posterUrl, $status]);
+                $seriesId = (int)$pdo->lastInsertId();
+            }
+            record_activity($pdo, $admin['id'], $id > 0 ? 'series_updated' : 'series_created', (string)$seriesId);
+            respond(['success' => true, 'data' => ['id' => $seriesId]], $id > 0 ? 200 : 201);
+
+        case 'admin_delete_series':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $seriesId = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            if ($seriesId === false || $seriesId < 1) {
+                respond(['success' => false, 'error' => 'Serial ID noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare('DELETE FROM series WHERE id = ?');
+            $statement->execute([$seriesId]);
+            if ($statement->rowCount() === 0) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            record_activity($pdo, $admin['id'], 'series_deleted', (string)$seriesId);
+            respond(['success' => true, 'message' => 'Serial o‘chirildi.']);
+
+        case 'admin_save_season':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $id = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            $id = $id === false || $id < 1 ? 0 : $id;
+            $seriesId = filter_var(post_string('series_id'), FILTER_VALIDATE_INT);
+            $seasonNumber = filter_var(post_string('season_number'), FILTER_VALIDATE_INT);
+            $title = trim(post_string('title'));
+            $description = trim(post_string('description'));
+            if ($seriesId === false || $seriesId < 1 || $seasonNumber === false || $seasonNumber < 1
+                || $seasonNumber > 1000 || mb_strlen($title) > 200 || mb_strlen($description) > 2000) {
+                respond(['success' => false, 'error' => 'Mavsum ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            $parent = $pdo->prepare('SELECT 1 FROM series WHERE id = ?');
+            $parent->execute([$seriesId]);
+            if (!$parent->fetchColumn()) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            try {
+                if ($id > 0) {
+                    $statement = $pdo->prepare(
+                        'UPDATE seasons SET series_id = ?, season_number = ?, title = ?, description = ?,
+                         updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+                    );
+                    $statement->execute([$seriesId, $seasonNumber, $title, $description, $id]);
+                    $exists = $pdo->prepare('SELECT 1 FROM seasons WHERE id = ?');
+                    $exists->execute([$id]);
+                    if (!$exists->fetchColumn()) {
+                        respond(['success' => false, 'error' => 'Mavsum topilmadi.'], 404);
+                    }
+                    $seasonId = $id;
+                } else {
+                    $statement = $pdo->prepare(
+                        'INSERT INTO seasons(series_id, season_number, title, description, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+                    );
+                    $statement->execute([$seriesId, $seasonNumber, $title, $description]);
+                    $seasonId = (int)$pdo->lastInsertId();
+                }
+            } catch (PDOException $exception) {
+                if (str_contains(strtolower($exception->getMessage()), 'unique')) {
+                    respond(['success' => false, 'error' => 'Bu serialda bunday mavsum raqami mavjud.'], 409);
+                }
+                throw $exception;
+            }
+            record_activity($pdo, $admin['id'], $id > 0 ? 'season_updated' : 'season_created', (string)$seasonId);
+            respond(['success' => true, 'data' => ['id' => $seasonId]], $id > 0 ? 200 : 201);
+
+        case 'admin_delete_season':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $seasonId = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            if ($seasonId === false || $seasonId < 1) {
+                respond(['success' => false, 'error' => 'Mavsum ID noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare('DELETE FROM seasons WHERE id = ?');
+            $statement->execute([$seasonId]);
+            if ($statement->rowCount() === 0) {
+                respond(['success' => false, 'error' => 'Mavsum topilmadi.'], 404);
+            }
+            record_activity($pdo, $admin['id'], 'season_deleted', (string)$seasonId);
+            respond(['success' => true, 'message' => 'Mavsum o‘chirildi.']);
+
+        case 'admin_save_episode':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $id = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            $id = $id === false || $id < 1 ? 0 : $id;
+            $seasonId = filter_var(post_string('season_id'), FILTER_VALIDATE_INT);
+            $episodeNumber = filter_var(post_string('episode_number'), FILTER_VALIDATE_INT);
+            $title = trim(post_string('title'));
+            $description = trim(post_string('description'));
+            $durationRaw = trim(post_string('duration_seconds'));
+            $duration = $durationRaw === '' ? null : filter_var($durationRaw, FILTER_VALIDATE_INT);
+            $status = post_string('status');
+            if ($seasonId === false || $seasonId < 1 || $episodeNumber === false || $episodeNumber < 1
+                || $episodeNumber > 10000 || $title === '' || mb_strlen($title) > 200
+                || mb_strlen($description) > 5000 || ($durationRaw !== '' && ($duration === false || $duration < 0 || $duration > 86400))
+                || !in_array($status, ['draft', 'published', 'archived'], true)) {
+                respond(['success' => false, 'error' => 'Qism ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            $parent = $pdo->prepare('SELECT 1 FROM seasons WHERE id = ?');
+            $parent->execute([$seasonId]);
+            if (!$parent->fetchColumn()) {
+                respond(['success' => false, 'error' => 'Mavsum topilmadi.'], 404);
+            }
+            try {
+                if ($id > 0) {
+                    $statement = $pdo->prepare(
+                        'UPDATE episodes SET season_id = ?, episode_number = ?, title = ?, description = ?,
+                         duration_seconds = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+                    );
+                    $statement->execute([$seasonId, $episodeNumber, $title, $description, $duration, $status, $id]);
+                    $exists = $pdo->prepare('SELECT 1 FROM episodes WHERE id = ?');
+                    $exists->execute([$id]);
+                    if (!$exists->fetchColumn()) {
+                        respond(['success' => false, 'error' => 'Qism topilmadi.'], 404);
+                    }
+                    $episodeId = $id;
+                } else {
+                    $statement = $pdo->prepare(
+                        'INSERT INTO episodes(season_id, episode_number, title, description, duration_seconds, status, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+                    );
+                    $statement->execute([$seasonId, $episodeNumber, $title, $description, $duration, $status]);
+                    $episodeId = (int)$pdo->lastInsertId();
+                }
+            } catch (PDOException $exception) {
+                if (str_contains(strtolower($exception->getMessage()), 'unique')) {
+                    respond(['success' => false, 'error' => 'Bu mavsumda bunday qism raqami mavjud.'], 409);
+                }
+                throw $exception;
+            }
+            record_activity($pdo, $admin['id'], $id > 0 ? 'episode_updated' : 'episode_created', (string)$episodeId);
+            respond(['success' => true, 'data' => ['id' => $episodeId]], $id > 0 ? 200 : 201);
+
+        case 'admin_delete_episode':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $episodeId = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            if ($episodeId === false || $episodeId < 1) {
+                respond(['success' => false, 'error' => 'Qism ID noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare('DELETE FROM episodes WHERE id = ?');
+            $statement->execute([$episodeId]);
+            if ($statement->rowCount() === 0) {
+                respond(['success' => false, 'error' => 'Qism topilmadi.'], 404);
+            }
+            record_activity($pdo, $admin['id'], 'episode_deleted', (string)$episodeId);
+            respond(['success' => true, 'message' => 'Qism o‘chirildi.']);
+
         case 'get_comments':
             require_method('GET');
             $movieId = get_id('id');
