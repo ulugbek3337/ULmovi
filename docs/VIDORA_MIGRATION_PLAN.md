@@ -85,6 +85,7 @@ VIDORA is the new public brand and product identity of the existing ULmovi platf
 ### Phase 4 — Isolated Alwaysdata test deployment
 - [ ] Confirm available disk/RAM limits and web-site configuration.
 - [ ] Create a separate VIDORA test directory.
+- [x] Add a GitHub-managed script for safely creating/updating the isolated test checkout.
 - [ ] Use a separate test database, storage directory, and test-only credentials.
 - [ ] Deploy only from a reviewed GitHub commit.
 - [ ] Verify the test site without changing production.
