@@ -47,6 +47,8 @@ jobs:
 
       - name: Test VIDORA brand consistency
         run: node tests/vidora-brand-smoke.cjs
+      - name: Test VIDORA premium UI consistency
+        run: node tests/vidora-premium-ui-smoke.cjs
 
       - name: Test VIDORA series admin UI
         run: node tests/vidora-series-admin-smoke.cjs
