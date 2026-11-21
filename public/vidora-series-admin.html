@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08090D">
+    <title>VIDORA — Seriallar boshqaruvi</title>
+    <link rel="stylesheet" href="css/vidora-brand.css">
+    <link rel="stylesheet" href="css/vidora-series-admin.css">
+    <link rel="stylesheet" href="css/vidora-premium.css">
+</head>
+<body class="series-admin-page">
+    <header class="series-admin-header">
+        <a class="series-admin-brand" href="index.html"><span aria-hidden="true">V</span> VIDORA</a>
+        <div class="series-admin-header-actions">
+            <a href="admin.html">Admin panel</a>
+            <button id="seriesLogout" type="button">Chiqish</button>
+        </div>
+    </header>
+    <main class="series-admin-main">
+        <div class="series-admin-intro">
+            <p class="eyebrow">KONTENT BOSHQARUVI</p>
+            <h1>Seriallar</h1>
+            <p>Seriallar, mavsumlar va qismlarni boshqaring. Ommaga faqat “Nashr qilingan” holatidagi kontent ko‘rinadi.</p>
+        </div>
+        <p id="seriesAdminStatus" class="series-admin-status" role="status" aria-live="polite"></p>
+        <section class="series-admin-grid">
+            <article class="series-admin-panel">
+                <div class="panel-heading"><h2>Serial ma’lumotlari</h2><button id="newSeriesBtn" type="button" class="quiet-button">Yangi serial</button></div>
+                <form id="seriesForm">
+                    <input type="hidden" name="id" id="seriesId">
+                    <label for="seriesTitle">Nomi</label>
+                    <input id="seriesTitle" name="title" maxlength="200" required>
+                    <label for="seriesDescription">Tavsif</label>
+                    <textarea id="seriesDescription" name="description" maxlength="5000" rows="4"></textarea>
+                    <div class="field-pair">
+                        <div><label for="seriesYear">Yil</label><input id="seriesYear" name="year" type="number" min="1888" max="2100"></div>
+                        <div><label for="seriesGenre">Janr</label><input id="seriesGenre" name="genre" maxlength="100"></div>
+                    </div>
+                    <label for="seriesPosterUrl">Poster URL (HTTPS)</label>
+                    <input id="seriesPosterUrl" name="poster_url" type="url" maxlength="1000" placeholder="https://...">
+                    <label for="seriesStatus">Holati</label>
+                    <select id="seriesStatus" name="status">
+                        <option value="draft">Qoralama</option>
+                        <option value="published">Nashr qilingan</option>
+                        <option value="archived">Arxivlangan</option>
+                    </select>
+                    <button class="gold-button" type="submit">Serialni saqlash</button>
+                </form>
+                <div class="panel-subheading"><h3>Mavjud seriallar</h3><span id="seriesCount">0</span></div>
+                <div id="seriesList" class="series-list"></div>
+            </article>
+
+            <article class="series-admin-panel">
+                <div class="panel-heading"><h2>Mavsumlar</h2><span id="selectedSeriesLabel">Serial tanlanmagan</span></div>
+                <form id="seasonForm">
+                    <input type="hidden" name="id" id="seasonId">
+                    <label for="seasonSeriesId">Serial</label>
+                    <select id="seasonSeriesId" name="series_id" required><option value="">Serialni tanlang</option></select>
+                    <div class="field-pair">
+                        <div><label for="seasonNumber">Mavsum raqami</label><input id="seasonNumber" name="season_number" type="number" min="1" max="1000" required></div>
+                        <div><label for="seasonTitle">Nomi</label><input id="seasonTitle" name="title" maxlength="200"></div>
+                    </div>
+                    <label for="seasonDescription">Tavsif</label>
+                    <textarea id="seasonDescription" name="description" maxlength="2000" rows="2"></textarea>
+                    <button class="gold-button" type="submit">Mavsumni saqlash</button>
+                </form>
+                <div id="seasonList" class="hierarchy-list"><p class="empty-state">Avval serial tanlang.</p></div>
+            </article>
+
+            <article class="series-admin-panel episode-panel">
+                <div class="panel-heading"><h2>Qismlar</h2><span id="selectedSeasonLabel">Mavsum tanlanmagan</span></div>
+                <form id="episodeForm">
+                    <input type="hidden" name="id" id="episodeId">
+                    <label for="episodeSeasonId">Mavsum</label>
+                    <select id="episodeSeasonId" name="season_id" required><option value="">Mavsumni tanlang</option></select>
+                    <div class="field-pair">
+                        <div><label for="episodeNumber">Qism raqami</label><input id="episodeNumber" name="episode_number" type="number" min="1" max="10000" required></div>
+                        <div><label for="episodeDuration">Davomiyligi (soniya)</label><input id="episodeDuration" name="duration_seconds" type="number" min="0" max="86400"></div>
+                    </div>
+                    <label for="episodeTitle">Nomi</label>
+                    <input id="episodeTitle" name="title" maxlength="200" required>
+                    <label for="episodeDescription">Tavsif</label>
+                    <textarea id="episodeDescription" name="description" maxlength="5000" rows="3"></textarea>
+                    <label for="episodeStatus">Holati</label>
+                    <select id="episodeStatus" name="status"><option value="draft">Qoralama</option><option value="published">Nashr qilingan</option><option value="archived">Arxivlangan</option></select>
+                    <button class="gold-button" type="submit">Qismni saqlash</button>
+                </form>
+                <section class="episode-upload-box" aria-labelledby="episodeUploadTitle">
+                    <h3 id="episodeUploadTitle">Qism videosini yuklash</h3>
+                    <label for="episodeVideoFile">MP4 yoki WebM video</label>
+                    <input id="episodeVideoFile" type="file" accept="video/mp4,video/webm,.mp4,.webm">
+                    <label for="episodeVideoQuality">Video sifati</label>
+                    <select id="episodeVideoQuality">
+                        <option value="original">Original</option>
+                        <option value="1080p">1080p</option>
+                        <option value="720p">720p</option>
+                        <option value="480p">480p</option>
+                        <option value="360p">360p</option>
+                    </select>
+                    <button id="uploadEpisodeVideo" type="button" class="gold-button">Videoni yuklash</button>
+                    <progress id="episodeUploadProgress" value="0" max="100"></progress>
+                    <p id="episodeUploadStatus" class="upload-status" role="status" aria-live="polite">Avval qism tanlang.</p>
+                </section>
+                <div id="episodeList" class="hierarchy-list"><p class="empty-state">Avval mavsum tanlang.</p></div>
+            </article>
+        </section>
+        <p class="series-admin-note">Qismlarni boshqaring, MP4 yoki WebM videolarni sifat bo‘yicha yuklang va nashr qilingan qismlarni tomoshabinlarga taqdim eting.</p>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/vidora-series-admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+:root { color-scheme: dark; --watch-bg:#08090d; --watch-panel:#14151b; --watch-gold:#d4af37; --watch-text:#f5f5f5; --watch-muted:#a5a5ad; }
+* { box-sizing:border-box; }
+body.vidora-watch-page { margin:0; min-height:100vh; background:var(--watch-bg); color:var(--watch-text); font-family:"DM Sans","Segoe UI",sans-serif; }
+.watch-header { height:68px; padding:0 clamp(18px,4vw,56px); display:flex; align-items:center; justify-content:space-between; background:#0d0e13; border-bottom:1px solid rgba(212,175,55,.2); }
+.watch-header a { color:var(--watch-muted); text-decoration:none; font-size:13px; }
+.watch-header .watch-brand { display:flex; align-items:center; gap:10px; color:var(--watch-text); font-weight:800; letter-spacing:.16em; }
+.watch-brand span { display:grid; place-items:center; width:34px; height:34px; border-radius:9px; color:#08090d; background:var(--watch-gold); }
+.watch-layout { width:min(1440px,calc(100% - 36px)); margin:0 auto; padding:34px 0 60px; display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:24px; align-items:start; }
+.watch-main { min-width:0; }
+.watch-eyebrow { margin:0 0 8px; color:var(--watch-gold); font-size:10px; font-weight:800; letter-spacing:.2em; }
+.watch-main h1 { margin:0; font-size:clamp(26px,4vw,38px); }
+.episode-heading { margin:8px 0 16px; color:var(--watch-muted); }
+.video-frame { position:relative; overflow:hidden; aspect-ratio:16/9; background:#000; border:1px solid rgba(212,175,55,.18); border-radius:14px; }
+.video-frame video { width:100%; height:100%; display:block; background:#000; }
+.player-message { position:absolute; inset:auto 12px 52px; text-align:center; color:#eee; font-size:13px; text-shadow:0 1px 5px #000; pointer-events:none; }
+.player-controls { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:14px; }
+.player-controls label { color:var(--watch-muted); font-size:12px; }
+.player-controls select { padding:9px 12px; color:var(--watch-text); background:var(--watch-panel); border:1px solid #363741; border-radius:8px; }
+.player-controls button { margin-left:auto; padding:10px 14px; color:#08090d; background:var(--watch-gold); border:0; border-radius:8px; font-weight:700; cursor:pointer; }
+.player-controls button:disabled { opacity:.45; cursor:not-allowed; }
+.watch-description { color:#d0d0d5; line-height:1.7; white-space:pre-line; }
+.watch-status,.watch-hint { color:var(--watch-muted); font-size:12px; line-height:1.6; }
+.watch-sidebar { padding:18px; background:var(--watch-panel); border:1px solid rgba(212,175,55,.2); border-radius:14px; }
+.watch-sidebar h2 { margin:0 0 14px; font-size:18px; }
+.episode-navigation { display:grid; gap:8px; max-height:70vh; overflow:auto; }
+.episode-nav-button { width:100%; display:grid; grid-template-columns:38px 1fr; gap:10px; align-items:center; padding:10px; color:var(--watch-text); text-align:left; background:#0d0e13; border:1px solid #2b2c34; border-radius:9px; cursor:pointer; }
+.episode-nav-button.active { border-color:var(--watch-gold); background:#201c10; }
+.episode-nav-button:disabled { opacity:.4; cursor:not-allowed; }
+.episode-nav-number { color:var(--watch-gold); font-size:12px; font-weight:800; }
+.episode-nav-text { display:grid; gap:3px; min-width:0; }
+.episode-nav-text strong { overflow-wrap:anywhere; font-size:12px; }
+.episode-nav-text small { color:var(--watch-muted); font-size:10px; }
+@media(max-width:900px) { .watch-layout { grid-template-columns:1fr; } .watch-sidebar { order:2; } .episode-navigation { max-height:none; grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:540px) { .watch-layout { width:calc(100% - 24px); padding-top:22px; } .episode-navigation { grid-template-columns:1fr; } .watch-header { padding:0 14px; } }

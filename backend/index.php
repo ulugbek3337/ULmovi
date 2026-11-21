@@ -9,6 +9,7 @@ header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
 
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/google_drive.php';
+require_once __DIR__ . '/series.php';
 
 function stream_file(string $path, string $mime, string $downloadName = ''): never
 {
@@ -513,6 +514,60 @@ function start_admin_upload(PDO $pdo, array $admin): array
     ];
 }
 
+function start_admin_episode_upload(PDO $pdo, array $admin): array
+{
+    $episodeId = filter_var(post_string('episode_id'), FILTER_VALIDATE_INT);
+    $quality = post_string('quality');
+    $totalSize = filter_var(post_string('total_size'), FILTER_VALIDATE_INT);
+    $allowedQualities = ['original', '1080p', '720p', '480p', '360p'];
+    if ($episodeId === false || $episodeId < 1 || !in_array($quality, $allowedQualities, true)
+        || $totalSize === false || $totalSize < 1 || $totalSize > MAX_VIDEO_UPLOAD_BYTES) {
+        respond(['success' => false, 'error' => 'Qism, video sifati yoki fayl hajmi noto‘g‘ri.'], 422);
+    }
+    $episodeQuery = $pdo->prepare(
+        'SELECT e.id, e.title FROM episodes e WHERE e.id = ?'
+    );
+    $episodeQuery->execute([$episodeId]);
+    $episode = $episodeQuery->fetch();
+    if (!$episode) {
+        respond(['success' => false, 'error' => 'Qism topilmadi.'], 404);
+    }
+    $freeBytes = @disk_free_space(storage_directory());
+    $requiredBytes = ($totalSize * 2) + (64 * 1024 * 1024);
+    if ($freeBytes === false || $freeBytes < $requiredBytes) {
+        respond(['success' => false, 'error' => 'Diskda videoni yuklash va yig‘ish uchun yetarli joy yo‘q.'], 507);
+    }
+
+    cleanup_expired_upload_sessions($pdo);
+    $uploadId = bin2hex(random_bytes(16));
+    $chunkCount = (int)ceil($totalSize / VIDEO_UPLOAD_CHUNK_BYTES);
+    $now = time();
+    upload_session_directory($uploadId, true);
+    try {
+        $statement = $pdo->prepare(
+            'INSERT INTO upload_sessions(
+                upload_id, user_id, title, genre, year, description, total_size,
+                chunk_size, chunk_count, status, created_at, updated_at, expires_at,
+                target_type, target_id, target_quality
+             ) VALUES (?, ?, ?, "other", ?, "", ?, ?, ?, "uploading", ?, ?, ?, "episode", ?, ?)'
+        );
+        $statement->execute([
+            $uploadId, $admin['id'], (string)$episode['title'], (int)date('Y'),
+            $totalSize, VIDEO_UPLOAD_CHUNK_BYTES, $chunkCount, $now, $now,
+            $now + VIDEO_UPLOAD_TTL_SECONDS, $episodeId, $quality,
+        ]);
+    } catch (Throwable $exception) {
+        remove_upload_session_directory($uploadId);
+        throw $exception;
+    }
+    return [
+        'upload_id' => $uploadId,
+        'chunk_size' => VIDEO_UPLOAD_CHUNK_BYTES,
+        'chunk_count' => $chunkCount,
+        'expires_at' => $now + VIDEO_UPLOAD_TTL_SECONDS,
+    ];
+}
+
 function store_admin_upload_chunk(PDO $pdo, array $admin): array
 {
     $uploadId = post_string('upload_id');
@@ -647,7 +702,7 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
     }
 
     $storage = storage_directory();
-    $videoDirectory = $storage . DIRECTORY_SEPARATOR . 'videos';
+    $videoDirectory = $storage . DIRECTORY_SEPARATOR . (($session['target_type'] ?? 'movie') === 'episode' ? 'episode-videos' : 'videos');
     if (!is_dir($videoDirectory) && !mkdir($videoDirectory, 0700, true) && !is_dir($videoDirectory)) {
         $pdo->prepare('UPDATE upload_sessions SET status = "uploading" WHERE upload_id = ?')->execute([$uploadId]);
         throw new RuntimeException('Video saqlash papkasini yaratib bo‘lmadi.');
@@ -698,7 +753,7 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
         }
         $metadata = probe_video_metadata($pdo, $assembledPath);
         $filename = bin2hex(random_bytes(24)) . '.' . $extensions[$mime];
-        $relativeVideoPath = 'videos' . DIRECTORY_SEPARATOR . $filename;
+        $relativeVideoPath = (($session['target_type'] ?? 'movie') === 'episode' ? 'episode-videos' : 'videos') . DIRECTORY_SEPARATOR . $filename;
         $videoPath = $videoDirectory . DIRECTORY_SEPARATOR . $filename;
         if (!rename($assembledPath, $videoPath)) {
             throw new RuntimeException('Yig‘ilgan videoni doimiy saqlash joyiga ko‘chirib bo‘lmadi.');
@@ -708,6 +763,58 @@ function finalize_admin_upload(PDO $pdo, array $admin): array
                 'image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp',
             ], 10 * 1024 * 1024, 'posters');
             $posterPath = $poster['path'];
+        }
+
+        if (($session['target_type'] ?? 'movie') === 'episode') {
+            $episodeId = (int)($session['target_id'] ?? 0);
+            $quality = (string)($session['target_quality'] ?? '');
+            if ($episodeId < 1 || !in_array($quality, ['original', '1080p', '720p', '480p', '360p'], true)) {
+                throw new DomainException('Qism video yuklash ma’lumotlari noto‘g‘ri.');
+            }
+            $pdo->beginTransaction();
+            $exists = $pdo->prepare('SELECT 1 FROM episodes WHERE id = ?');
+            $exists->execute([$episodeId]);
+            if (!$exists->fetchColumn()) {
+                throw new DomainException('Yuklash vaqtida qism o‘chirilgan.');
+            }
+            $oldFileQuery = $pdo->prepare(
+                'SELECT file_path, source_type FROM episode_files WHERE episode_id = ? AND quality = ?'
+            );
+            $oldFileQuery->execute([$episodeId, $quality]);
+            $oldFile = $oldFileQuery->fetch();
+            $fileStatement = $pdo->prepare(
+                'INSERT INTO episode_files(episode_id, quality, file_path, mime_type, file_size, source_type, drive_file_id)
+                 VALUES (?, ?, ?, ?, ?, "local", NULL)
+                 ON CONFLICT(episode_id, quality) DO UPDATE SET
+                    file_path = excluded.file_path, mime_type = excluded.mime_type,
+                    file_size = excluded.file_size, source_type = "local", drive_file_id = NULL,
+                    created_at = CURRENT_TIMESTAMP'
+            );
+            $fileStatement->execute([$episodeId, $quality, $relativeVideoPath, $mime, (int)$session['total_size']]);
+            $pdo->prepare(
+                'UPDATE episodes SET duration_seconds = CASE
+                    WHEN duration_seconds IS NULL OR duration_seconds = 0 THEN ?
+                    ELSE duration_seconds END, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+            )->execute([(int)round($metadata['duration']), $episodeId]);
+            record_activity($pdo, (int)$admin['id'], 'episode_video_uploaded', $episodeId . ':' . $quality);
+            $pdo->prepare('UPDATE upload_sessions SET status = "completed", updated_at = ? WHERE upload_id = ?')
+                ->execute([time(), $uploadId]);
+            $pdo->commit();
+            if ($oldFile && ($oldFile['source_type'] ?? 'local') === 'local'
+                && (string)$oldFile['file_path'] !== $relativeVideoPath) {
+                try {
+                    @unlink(resolve_storage_file((string)$oldFile['file_path']));
+                } catch (Throwable) {
+                    error_log('VIDORA replaced episode media could not be removed; episode=' . $episodeId);
+                }
+            }
+            remove_upload_session_directory($uploadId);
+            return [
+                'message' => 'Qism videosi xavfsiz saqlandi.',
+                'episode_id' => $episodeId,
+                'quality' => $quality,
+                'duration_seconds' => (int)round($metadata['duration']),
+            ];
         }
 
         $pdo->beginTransaction();
@@ -874,6 +981,36 @@ try {
         && ($userForMaintenance['role'] ?? '') !== 'super_admin'
         && !in_array($action, ['auth_csrf', 'auth_me', 'auth_login', 'auth_logout', 'auth_forgot_password', 'auth_reset_validate', 'auth_reset_password'], true)) {
         respond(['success' => false, 'error' => 'Sayt vaqtincha texnik xizmatda. Keyinroq qayta urinib ko‘ring.'], 503);
+    }
+
+    if ($action === 'stream_episode') {
+        require_method('GET');
+        $episodeId = get_id('id');
+        $quality = isset($_GET['quality']) && is_string($_GET['quality']) ? $_GET['quality'] : 'original';
+        if (!in_array($quality, ['original', '1080p', '720p', '480p', '360p'], true)) {
+            respond(['success' => false, 'error' => 'Video sifati noto‘g‘ri.'], 422);
+        }
+        $statement = $pdo->prepare(
+            "SELECT ef.file_path, ef.mime_type, ef.source_type
+             FROM episode_files ef
+             JOIN episodes e ON e.id = ef.episode_id
+             JOIN seasons se ON se.id = e.season_id
+             JOIN series s ON s.id = se.series_id
+             WHERE ef.episode_id = ? AND ef.quality = ?
+               AND e.status = 'published' AND s.status = 'published'
+             LIMIT 1"
+        );
+        $statement->execute([$episodeId, $quality]);
+        $file = $statement->fetch();
+        if (!$file || ($file['source_type'] ?? 'local') !== 'local') {
+            respond(['success' => false, 'error' => 'Bu qism videosi hozir mavjud emas.'], 404);
+        }
+        try {
+            $path = resolve_storage_file((string)$file['file_path']);
+        } catch (Throwable) {
+            respond(['success' => false, 'error' => 'Video fayli topilmadi.'], 404);
+        }
+        stream_file($path, (string)$file['mime_type']);
     }
 
     if ($action === 'stream_video' || $action === 'download_movie') {
@@ -1367,6 +1504,310 @@ header('Content-Type: application/json; charset=UTF-8');
             }
             respond(['success' => true, 'data' => $movies]);
 
+        case 'get_series':
+            require_method('GET');
+            $query = trim(is_string($_GET['q'] ?? null) ? $_GET['q'] : '');
+            $limit = filter_var($_GET['limit'] ?? 24, FILTER_VALIDATE_INT);
+            $offset = filter_var($_GET['offset'] ?? 0, FILTER_VALIDATE_INT);
+            $limit = max(1, min(100, $limit === false ? 24 : $limit));
+            $offset = max(0, $offset === false ? 0 : $offset);
+            respond(['success' => true, 'data' => vidora_list_published_series($pdo, $query, $limit, $offset)]);
+
+        case 'get_series_details':
+            require_method('GET');
+            $seriesId = get_id('id');
+            $series = vidora_get_published_series($pdo, $seriesId);
+            if ($series === null) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            respond(['success' => true, 'data' => $series]);
+
+        case 'get_episode_progress':
+            require_method('GET');
+            $user = require_user($pdo);
+            $episodeId = get_id('id');
+            $statement = $pdo->prepare(
+                "SELECT p.position_seconds, p.duration_seconds, p.updated_at
+                 FROM episode_watch_progress p
+                 JOIN episodes e ON e.id = p.episode_id
+                 JOIN seasons se ON se.id = e.season_id
+                 JOIN series s ON s.id = se.series_id
+                 WHERE p.user_id = ? AND p.episode_id = ?
+                   AND e.status = 'published' AND s.status = 'published'"
+            );
+            $statement->execute([$user['id'], $episodeId]);
+            $progress = $statement->fetch();
+            respond(['success' => true, 'data' => $progress ?: null]);
+
+        case 'save_episode_progress':
+            require_method('POST');
+            $user = require_user($pdo);
+            $episodeId = filter_var(post_string('episode_id'), FILTER_VALIDATE_INT);
+            $position = filter_var(post_string('position_seconds'), FILTER_VALIDATE_FLOAT);
+            if ($episodeId === false || $episodeId < 1 || $position === false || !is_finite((float)$position)
+                || $position < 0 || $position > 86400) {
+                respond(['success' => false, 'error' => 'Tomosha progress ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare(
+                "SELECT e.duration_seconds FROM episodes e
+                 JOIN seasons se ON se.id = e.season_id
+                 JOIN series s ON s.id = se.series_id
+                 WHERE e.id = ? AND e.status = 'published' AND s.status = 'published'"
+            );
+            $statement->execute([$episodeId]);
+            $duration = $statement->fetchColumn();
+            if ($duration === false) {
+                respond(['success' => false, 'error' => 'Ochiq qism topilmadi.'], 404);
+            }
+            $duration = max(0.0, (float)$duration);
+            $position = min((float)$position, $duration > 0 ? $duration : 86400.0);
+            if ($duration > 0 && $position >= max(0, $duration - 10)) {
+                $pdo->prepare('DELETE FROM episode_watch_progress WHERE user_id = ? AND episode_id = ?')
+                    ->execute([$user['id'], $episodeId]);
+                respond(['success' => true, 'data' => ['completed' => true]]);
+            }
+            $pdo->prepare(
+                'INSERT INTO episode_watch_progress(user_id, episode_id, position_seconds, duration_seconds, updated_at)
+                 VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                 ON CONFLICT(user_id, episode_id) DO UPDATE SET
+                    position_seconds = excluded.position_seconds,
+                    duration_seconds = excluded.duration_seconds,
+                    updated_at = CURRENT_TIMESTAMP'
+            )->execute([$user['id'], $episodeId, $position, $duration]);
+            respond(['success' => true, 'data' => ['position_seconds' => $position, 'duration_seconds' => $duration]]);
+
+        case 'admin_get_series':
+            require_method('GET');
+            require_admin($pdo);
+            $seriesRows = $pdo->query(
+                "SELECT s.id, s.title, s.description, s.year, s.genre, s.poster_url, s.status,
+                        s.created_at, s.updated_at,
+                        (SELECT COUNT(*) FROM seasons se WHERE se.series_id = s.id) AS season_count,
+                        (SELECT COUNT(*) FROM seasons se JOIN episodes e ON e.season_id = se.id
+                         WHERE se.series_id = s.id) AS episode_count
+                 FROM series s ORDER BY s.updated_at DESC, s.id DESC"
+            )->fetchAll();
+            respond(['success' => true, 'data' => $seriesRows]);
+
+        case 'admin_get_series_details':
+            require_method('GET');
+            require_admin($pdo);
+            $seriesId = get_id('id');
+            $statement = $pdo->prepare(
+                'SELECT id, title, description, year, genre, poster_url, status, created_at, updated_at
+                 FROM series WHERE id = ?'
+            );
+            $statement->execute([$seriesId]);
+            $series = $statement->fetch();
+            if (!$series) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            $statement = $pdo->prepare(
+                'SELECT id, season_number, title, description, created_at, updated_at
+                 FROM seasons WHERE series_id = ? ORDER BY season_number ASC'
+            );
+            $statement->execute([$seriesId]);
+            $seasons = $statement->fetchAll();
+            $episodeStatement = $pdo->prepare(
+                "SELECT e.id, e.episode_number, e.title, e.description, e.duration_seconds,
+                        e.status, e.created_at, e.updated_at,
+                        (SELECT COUNT(*) FROM episode_files ef WHERE ef.episode_id = e.id) AS file_count
+                 FROM episodes e WHERE e.season_id = ? ORDER BY e.episode_number ASC"
+            );
+            foreach ($seasons as &$season) {
+                $episodeStatement->execute([(int)$season['id']]);
+                $season['episodes'] = $episodeStatement->fetchAll();
+            }
+            unset($season);
+            $series['seasons'] = $seasons;
+            respond(['success' => true, 'data' => $series]);
+
+        case 'admin_save_series':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $id = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            $id = $id === false || $id < 1 ? 0 : $id;
+            $title = trim(post_string('title'));
+            $description = trim(post_string('description'));
+            $genre = trim(post_string('genre'));
+            $yearRaw = trim(post_string('year'));
+            $year = $yearRaw === '' ? null : filter_var($yearRaw, FILTER_VALIDATE_INT);
+            $posterUrl = trim(post_string('poster_url'));
+            $status = post_string('status');
+            if ($title === '' || mb_strlen($title) > 200 || mb_strlen($description) > 5000
+                || mb_strlen($genre) > 100 || ($yearRaw !== '' && ($year === false || $year < 1888 || $year > (int)date('Y') + 10))
+                || !valid_https_url($posterUrl) || !in_array($status, ['draft', 'published', 'archived'], true)) {
+                respond(['success' => false, 'error' => 'Serial ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            if ($id > 0) {
+                $statement = $pdo->prepare(
+                    'UPDATE series SET title = ?, description = ?, year = ?, genre = ?, poster_url = ?, status = ?,
+                     updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+                );
+                $statement->execute([$title, $description, $year, $genre, $posterUrl, $status, $id]);
+                $exists = $pdo->prepare('SELECT 1 FROM series WHERE id = ?');
+                $exists->execute([$id]);
+                if (!$exists->fetchColumn()) {
+                    respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+                }
+                $seriesId = $id;
+            } else {
+                $statement = $pdo->prepare(
+                    'INSERT INTO series(title, description, year, genre, poster_url, status, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+                );
+                $statement->execute([$title, $description, $year, $genre, $posterUrl, $status]);
+                $seriesId = (int)$pdo->lastInsertId();
+            }
+            record_activity($pdo, $admin['id'], $id > 0 ? 'series_updated' : 'series_created', (string)$seriesId);
+            respond(['success' => true, 'data' => ['id' => $seriesId]], $id > 0 ? 200 : 201);
+
+        case 'admin_delete_series':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $seriesId = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            if ($seriesId === false || $seriesId < 1) {
+                respond(['success' => false, 'error' => 'Serial ID noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare('DELETE FROM series WHERE id = ?');
+            $statement->execute([$seriesId]);
+            if ($statement->rowCount() === 0) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            record_activity($pdo, $admin['id'], 'series_deleted', (string)$seriesId);
+            respond(['success' => true, 'message' => 'Serial o‘chirildi.']);
+
+        case 'admin_save_season':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $id = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            $id = $id === false || $id < 1 ? 0 : $id;
+            $seriesId = filter_var(post_string('series_id'), FILTER_VALIDATE_INT);
+            $seasonNumber = filter_var(post_string('season_number'), FILTER_VALIDATE_INT);
+            $title = trim(post_string('title'));
+            $description = trim(post_string('description'));
+            if ($seriesId === false || $seriesId < 1 || $seasonNumber === false || $seasonNumber < 1
+                || $seasonNumber > 1000 || mb_strlen($title) > 200 || mb_strlen($description) > 2000) {
+                respond(['success' => false, 'error' => 'Mavsum ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            $parent = $pdo->prepare('SELECT 1 FROM series WHERE id = ?');
+            $parent->execute([$seriesId]);
+            if (!$parent->fetchColumn()) {
+                respond(['success' => false, 'error' => 'Serial topilmadi.'], 404);
+            }
+            try {
+                if ($id > 0) {
+                    $statement = $pdo->prepare(
+                        'UPDATE seasons SET series_id = ?, season_number = ?, title = ?, description = ?,
+                         updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+                    );
+                    $statement->execute([$seriesId, $seasonNumber, $title, $description, $id]);
+                    $exists = $pdo->prepare('SELECT 1 FROM seasons WHERE id = ?');
+                    $exists->execute([$id]);
+                    if (!$exists->fetchColumn()) {
+                        respond(['success' => false, 'error' => 'Mavsum topilmadi.'], 404);
+                    }
+                    $seasonId = $id;
+                } else {
+                    $statement = $pdo->prepare(
+                        'INSERT INTO seasons(series_id, season_number, title, description, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+                    );
+                    $statement->execute([$seriesId, $seasonNumber, $title, $description]);
+                    $seasonId = (int)$pdo->lastInsertId();
+                }
+            } catch (PDOException $exception) {
+                if (str_contains(strtolower($exception->getMessage()), 'unique')) {
+                    respond(['success' => false, 'error' => 'Bu serialda bunday mavsum raqami mavjud.'], 409);
+                }
+                throw $exception;
+            }
+            record_activity($pdo, $admin['id'], $id > 0 ? 'season_updated' : 'season_created', (string)$seasonId);
+            respond(['success' => true, 'data' => ['id' => $seasonId]], $id > 0 ? 200 : 201);
+
+        case 'admin_delete_season':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $seasonId = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            if ($seasonId === false || $seasonId < 1) {
+                respond(['success' => false, 'error' => 'Mavsum ID noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare('DELETE FROM seasons WHERE id = ?');
+            $statement->execute([$seasonId]);
+            if ($statement->rowCount() === 0) {
+                respond(['success' => false, 'error' => 'Mavsum topilmadi.'], 404);
+            }
+            record_activity($pdo, $admin['id'], 'season_deleted', (string)$seasonId);
+            respond(['success' => true, 'message' => 'Mavsum o‘chirildi.']);
+
+        case 'admin_save_episode':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $id = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            $id = $id === false || $id < 1 ? 0 : $id;
+            $seasonId = filter_var(post_string('season_id'), FILTER_VALIDATE_INT);
+            $episodeNumber = filter_var(post_string('episode_number'), FILTER_VALIDATE_INT);
+            $title = trim(post_string('title'));
+            $description = trim(post_string('description'));
+            $durationRaw = trim(post_string('duration_seconds'));
+            $duration = $durationRaw === '' ? null : filter_var($durationRaw, FILTER_VALIDATE_INT);
+            $status = post_string('status');
+            if ($seasonId === false || $seasonId < 1 || $episodeNumber === false || $episodeNumber < 1
+                || $episodeNumber > 10000 || $title === '' || mb_strlen($title) > 200
+                || mb_strlen($description) > 5000 || ($durationRaw !== '' && ($duration === false || $duration < 0 || $duration > 86400))
+                || !in_array($status, ['draft', 'published', 'archived'], true)) {
+                respond(['success' => false, 'error' => 'Qism ma’lumotlari noto‘g‘ri.'], 422);
+            }
+            $parent = $pdo->prepare('SELECT 1 FROM seasons WHERE id = ?');
+            $parent->execute([$seasonId]);
+            if (!$parent->fetchColumn()) {
+                respond(['success' => false, 'error' => 'Mavsum topilmadi.'], 404);
+            }
+            try {
+                if ($id > 0) {
+                    $statement = $pdo->prepare(
+                        'UPDATE episodes SET season_id = ?, episode_number = ?, title = ?, description = ?,
+                         duration_seconds = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+                    );
+                    $statement->execute([$seasonId, $episodeNumber, $title, $description, $duration, $status, $id]);
+                    $exists = $pdo->prepare('SELECT 1 FROM episodes WHERE id = ?');
+                    $exists->execute([$id]);
+                    if (!$exists->fetchColumn()) {
+                        respond(['success' => false, 'error' => 'Qism topilmadi.'], 404);
+                    }
+                    $episodeId = $id;
+                } else {
+                    $statement = $pdo->prepare(
+                        'INSERT INTO episodes(season_id, episode_number, title, description, duration_seconds, status, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+                    );
+                    $statement->execute([$seasonId, $episodeNumber, $title, $description, $duration, $status]);
+                    $episodeId = (int)$pdo->lastInsertId();
+                }
+            } catch (PDOException $exception) {
+                if (str_contains(strtolower($exception->getMessage()), 'unique')) {
+                    respond(['success' => false, 'error' => 'Bu mavsumda bunday qism raqami mavjud.'], 409);
+                }
+                throw $exception;
+            }
+            record_activity($pdo, $admin['id'], $id > 0 ? 'episode_updated' : 'episode_created', (string)$episodeId);
+            respond(['success' => true, 'data' => ['id' => $episodeId]], $id > 0 ? 200 : 201);
+
+        case 'admin_delete_episode':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            $episodeId = filter_var(post_string('id'), FILTER_VALIDATE_INT);
+            if ($episodeId === false || $episodeId < 1) {
+                respond(['success' => false, 'error' => 'Qism ID noto‘g‘ri.'], 422);
+            }
+            $statement = $pdo->prepare('DELETE FROM episodes WHERE id = ?');
+            $statement->execute([$episodeId]);
+            if ($statement->rowCount() === 0) {
+                respond(['success' => false, 'error' => 'Qism topilmadi.'], 404);
+            }
+            record_activity($pdo, $admin['id'], 'episode_deleted', (string)$episodeId);
+            respond(['success' => true, 'message' => 'Qism o‘chirildi.']);
+
         case 'get_comments':
             require_method('GET');
             $movieId = get_id('id');
@@ -1486,6 +1927,16 @@ header('Content-Type: application/json; charset=UTF-8');
             }
             respond(['success' => true, 'data' => $stats]);
 
+        case 'admin_episode_upload_init':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            respond(['success' => true, 'data' => start_admin_episode_upload($pdo, $admin)], 201);
+
+        case 'admin_episode_upload_finalize':
+            require_method('POST');
+            $admin = require_admin($pdo);
+            respond(['success' => true, 'data' => finalize_admin_upload($pdo, $admin)], 201);
+
         case 'admin_upload_init':
             require_method('POST');
             $admin = require_admin($pdo);
@@ -1500,7 +1951,8 @@ header('Content-Type: application/json; charset=UTF-8');
             }
             $session = owned_upload_session($pdo, $uploadId, (int)$admin['id']);
             if ($session['status'] === 'assembling' && time() - (int)$session['updated_at'] > 1800) {
-                @unlink(storage_directory() . DIRECTORY_SEPARATOR . 'videos' . DIRECTORY_SEPARATOR . '.upload-' . $uploadId . '.assembling');
+                $uploadFolder = ($session['target_type'] ?? 'movie') === 'episode' ? 'episode-videos' : 'videos';
+                @unlink(storage_directory() . DIRECTORY_SEPARATOR . $uploadFolder . DIRECTORY_SEPARATOR . '.upload-' . $uploadId . '.assembling');
                 $pdo->prepare('UPDATE upload_sessions SET status = "uploading", updated_at = ? WHERE upload_id = ? AND status = "assembling"')
                     ->execute([time(), $uploadId]);
                 $session['status'] = 'uploading';

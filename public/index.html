@@ -3,20 +3,19 @@
 <head>
     <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0a0a0c">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-    <title>ULmovi — Kinolar olami</title>
-    <meta name="description" content="ULmovi — sevimli kinolaringiz, yangi premyeralar va ommabop filmlarni onlayn tomosha qilish uchun kino portali.">
+    <meta name="theme-color" content="#08090d">
+    <title>VIDORA — Feel the World of Cinema</title>
+    <meta name="description" content="VIDORA — kino dunyosini his eting. Sevimli filmlar, yangi premyeralar va unutilmas hikoyalarni tomosha qiling.">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/netflix-home.css">
     <link rel="stylesheet" href="css/homepage-fix.css">
+    <link rel="stylesheet" href="css/vidora-brand.css">
+    <link rel="stylesheet" href="css/vidora-premium.css">
 </head>
 <body>
         <header class="navbar">
         <div class="nav-container">
-            <a href="index.html" class="logo" aria-label="ULmovi bosh sahifa"><span class="logo-ul">UL</span><span class="logo-movi">movi</span></a>
+            <a href="index.html" class="logo" aria-label="VIDORA bosh sahifa"><span class="vidora-mark" aria-hidden="true">V</span><span class="vidora-word">VIDORA</span></a>
             <button id="mobileMenuToggle" class="menu-toggle" type="button" aria-label="Menyuni ochish" aria-controls="navPanel" aria-expanded="false"><span></span><span></span><span></span></button>
             <div id="navPanel" class="nav-panel">
                 <nav id="mainNav" class="main-nav" aria-label="Asosiy navigatsiya"></nav>
@@ -32,7 +31,7 @@
                 <div class="hero-content">
                     <p class="eyebrow">Bugungi tavsiya</p><div id="heroTags" class="hero-tags"></div>
                     <h1 id="heroTitle">Sevimli kinolaringiz shu yerda</h1><div id="heroMeta" class="hero-meta"></div>
-                    <p id="heroDescription" class="hero-description">ULmovi'da yangi filmlar va unutilmas hikoyalarni tomosha qiling.</p>
+                    <p id="heroDescription" class="hero-description">VIDORA'da yangi filmlar va unutilmas hikoyalarni tomosha qiling.</p>
                     <div class="hero-actions"><button id="heroWatchBtn" class="hero-button" type="button"><span aria-hidden="true">▶</span> Tomosha qilish</button><button id="heroDetailsBtn" class="hero-button hero-button-outline" type="button">Batafsil</button></div>
                     <div id="heroPagination" class="hero-pagination" role="group" aria-label="Tavsiya kinolarini tanlash"></div>
                 </div>
@@ -64,13 +63,21 @@
                 <div id="moviesGrid" class="movies-grid"></div>
                 <button id="loadMoreBtn" class="load-more-btn" type="button" hidden>Yana kinolarni ko‘rish</button>
             </section>
+            <section id="series" class="movies-section vidora-home-series">
+                <div class="section-heading">
+                    <div><p class="eyebrow">Mavsumlar va qismlar</p><h2>VIDORA seriallari</h2></div>
+                    <a class="section-all-link" href="series.html">Barcha seriallar <span aria-hidden="true">↗</span></a>
+                </div>
+                <div id="homeSeriesGrid" class="vidora-home-series-grid"></div>
+                <p id="homeSeriesStatus" class="section-note" role="status" aria-live="polite">Seriallar yuklanmoqda…</p>
+            </section>
             <section id="popular" class="movies-section">
                 <div class="section-heading"><div><p class="eyebrow">Ko‘p yoqtirilgan</p><h2>Ommabop kinolar</h2></div></div>
                 <div id="popularGrid" class="movies-grid popular-grid"></div>
             </section>
             <section id="promoRow" class="promo-row" aria-label="Hamkorlik va reklama">
                 <section id="homeAds" class="ad-slot promo-ad" aria-label="Reklama" hidden></section>
-                <a id="instagramPromo" class="instagram-promo" href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagramda ULmovi sahifasini kuzatish" hidden>
+                <a id="instagramPromo" class="instagram-promo" href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram sahifasini kuzatish" hidden>
                     <span class="promo-icon" aria-hidden="true">◎</span><span class="promo-copy"><span class="promo-kicker">Biz bilan yaqinroq bo‘ling</span><strong>Bizni Instagramda kuzatib boring</strong><span class="promo-handle">@jorayevu436</span></span>
                     <span class="promo-link">Kuzatish <span aria-hidden="true">↗</span></span>
                 </a>
@@ -79,10 +86,10 @@
     </main>
     <footer id="about" class="site-footer">
         <div class="footer-inner">
-            <div class="footer-brand"><a href="index.html" class="logo"><span class="logo-ul">UL</span><span class="logo-movi">movi</span></a><p>Har bir hikoya shu yerdan boshlanadi.</p><div class="footer-main-links"><a href="#latest">Kinolar</a><a href="#popular">Ommabop</a><a href="#about">Biz haqimizda</a></div></div>
-            <div class="footer-social"><strong>Biz bilan bog‘lanish</strong><div id="footerSocialLinks" aria-label="ULmovi ijtimoiy tarmoqlari"></div></div>
+            <div class="footer-brand"><a href="index.html" class="logo" aria-label="VIDORA bosh sahifa"><span class="vidora-mark" aria-hidden="true">V</span><span class="vidora-word">VIDORA</span></a><p>Feel the World of Cinema. Kino dunyosini his eting.</p><div class="footer-main-links"><a href="#latest">Kinolar</a><a href="#popular">Ommabop</a><a href="#about">Biz haqimizda</a></div></div>
+            <div class="footer-social"><strong>Biz bilan bog‘lanish</strong><div id="footerSocialLinks" aria-label="VIDORA ijtimoiy tarmoqlari"></div></div>
         </div>
-        <p class="footer-copyright">Copyright © 2026 - ULmovi</p>
+        <p class="footer-copyright">Copyright © 2026 - VIDORA</p>
     </footer>
 
     <div id="playerModal" class="player-overlay" role="dialog" aria-modal="true" aria-label="Video pleer">
@@ -101,7 +108,7 @@
     <div id="authModal" class="modal-overlay auth-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="authModalTitle" hidden>
         <section class="auth-card auth-dialog">
             <button id="closeAuthModal" class="detail-close" type="button" aria-label="Yopish">&times;</button>
-            <a href="index.html" class="logo">UL<span>movi</span></a>
+            <a href="index.html" class="logo"><span class="vidora-mark" aria-hidden="true">V</span><span class="vidora-word">VIDORA</span></a>
             <h2 id="authModalTitle">Hisobingizga kiring</h2>
             <div class="auth-tabs" role="tablist" aria-label="Hisob amallari">
                 <button type="button" class="active" data-auth-tab="login">Kirish</button>
@@ -155,6 +162,7 @@
         <button id="noticeToastLogin" type="button" hidden>Kirish</button>
     </div>
     <script src="js/api.js"></script>
+    <script src="js/vidora-home-series.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
     <script src="js/homepage-ui.js"></script>

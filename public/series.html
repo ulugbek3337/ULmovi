@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#08090D">
+    <title>VIDORA — Seriallar</title>
+    <link rel="stylesheet" href="css/vidora-brand.css">
+    <link rel="stylesheet" href="css/vidora-series.css">
+    <link rel="stylesheet" href="css/vidora-premium.css">
+</head>
+<body class="vidora-series-page">
+    <header class="series-public-header">
+        <a href="index.html" class="series-public-brand"><span>V</span> VIDORA</a>
+        <nav><a href="index.html">Kinolar</a><a href="series.html" aria-current="page">Seriallar</a></nav>
+    </header>
+    <main class="series-public-main">
+        <section class="series-public-hero">
+            <p class="series-eyebrow">VIDORA ORIGINAL STORIES</p>
+            <h1 id="seriesPageTitle">Seriallar olamiga xush kelibsiz</h1>
+            <p id="seriesPageDescription">Sevimli hikoyalaringizni mavsum va qismlar bo‘yicha tomosha qiling.</p>
+        </section>
+        <p id="seriesPageStatus" class="series-page-status" role="status" aria-live="polite">Seriallar yuklanmoqda…</p>
+        <section id="seriesCatalog" class="series-public-grid" aria-label="Seriallar ro‘yxati"></section>
+        <section id="seriesDetail" class="series-detail" hidden>
+            <div id="seriesDetailMeta" class="series-detail-meta"></div>
+            <div id="seriesSeasons" class="series-seasons"></div>
+        </section>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/vidora-series.js"></script>
+</body>
+</html>

@@ -31,7 +31,7 @@ assert.match(mainJs, /prefers-reduced-motion/);
 assert.match(htaccess, /max-age=3600/);
 assert.match(htaccess, /max-age=2592000/);
 assert.match(htaccess, /no-cache, must-revalidate/);
-assert.match(html, /name="description" content="ULmovi/);
+assert.match(html, /name="description" content="VIDORA/);
 const backend = fs.readFileSync('backend/index.php', 'utf8');
 assert.match(backend, /Cache-Control: public, max-age=3600, stale-while-revalidate=86400/);
 

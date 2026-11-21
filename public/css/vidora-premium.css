@@ -1,0 +1,188 @@
+/* VIDORA premium design system — shared visual refinement layer.
+   Keeps existing HTML hooks, JavaScript behavior and API contracts unchanged. */
+:root {
+  --vd-bg:#08090d; --vd-panel:#111319; --vd-panel-2:#171a22; --vd-line:rgba(245,245,245,.09);
+  --vd-gold:#d4af37; --vd-gold-soft:rgba(212,175,55,.16); --vd-text:#f5f5f5; --vd-muted:#a7a7b0;
+  --vd-radius:16px; --vd-shadow:0 24px 70px rgba(0,0,0,.38);
+}
+html { scroll-padding-top:90px; }
+body { color:var(--vd-text); background:var(--vd-bg); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+button,input,select,textarea { accent-color:var(--vd-gold); }
+button,a,select { -webkit-tap-highlight-color:transparent; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:2px solid var(--vd-gold); outline-offset:3px; }
+::selection { color:#08090d; background:var(--vd-gold); }
+a { text-underline-offset:3px; }
+[hidden] { display:none!important; }
+
+/* Global header and brand */
+.navbar,.profile-topbar,.series-public-header,.watch-header,.series-admin-header {
+  background:rgba(8,9,13,.88); border-bottom:1px solid rgba(212,175,55,.18);
+  backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+}
+.navbar { box-shadow:0 8px 30px rgba(0,0,0,.14); }
+.nav-container { max-width:1720px; min-height:76px; }
+.logo { gap:10px; }
+.vidora-mark { transition:transform .25s ease,box-shadow .25s ease; }
+.logo:hover .vidora-mark { transform:rotate(-8deg); box-shadow:0 0 22px rgba(212,175,55,.22); }
+.main-nav a { transition:color .2s ease; }
+.main-nav a:hover,.main-nav a[aria-current="page"] { color:var(--vd-gold); }
+.search-box input { min-height:42px; border-color:var(--vd-line); background:rgba(255,255,255,.045); transition:border-color .2s,background .2s,box-shadow .2s; }
+.search-box input:focus { border-color:rgba(212,175,55,.7); background:#111319; box-shadow:0 0 0 3px rgba(212,175,55,.1); outline:0; }
+.nav-auth-button,.admin-btn,.secondary-btn { transition:transform .2s,border-color .2s,background .2s,color .2s; }
+.nav-auth-button:hover,.admin-btn:hover,.secondary-btn:hover { transform:translateY(-1px); }
+
+/* Homepage */
+.hero.netflix-hero { min-height:clamp(470px,55vw,650px); }
+.netflix-hero .hero-art { background-color:#08090d; }
+.netflix-hero .hero-content { padding-top:clamp(58px,8vw,110px); padding-bottom:clamp(65px,8vw,105px); }
+.netflix-hero h1 { max-width:760px; text-wrap:balance; }
+.netflix-hero .hero-content>p:not(.eyebrow) { max-width:570px; }
+.hero-poster-wrap { filter:drop-shadow(0 28px 48px rgba(0,0,0,.55)); }
+.hero-poster { border:1px solid rgba(212,175,55,.3); border-radius:14px; }
+.hero-button { min-height:46px; border-radius:10px!important; font-weight:750; }
+.hero-button-outline { backdrop-filter:blur(12px); }
+.main-content { padding-top:clamp(28px,4vw,54px); }
+.movies-section { margin-bottom:clamp(42px,5vw,68px); }
+.section-heading { gap:18px; }
+.section-heading h2 { font-size:clamp(21px,2.2vw,29px)!important; }
+.section-all-link { color:var(--vd-gold); font-size:13px; font-weight:700; text-decoration:none; }
+.section-all-link:hover { color:#f0d77f; }
+.homepage-filters { gap:18px; padding:18px; background:linear-gradient(145deg,rgba(23,26,34,.96),rgba(13,15,21,.96)); border:1px solid var(--vd-line); border-radius:var(--vd-radius); box-shadow:0 12px 32px rgba(0,0,0,.16); }
+.genre-chip { transition:background .18s,border-color .18s,color .18s,transform .18s; }
+.genre-chip:hover { transform:translateY(-1px); }
+.filters-bar select,.filter-selects select { min-height:40px; }
+.movies-grid { gap:clamp(12px,1.4vw,20px); }
+.movie-card { border-color:rgba(255,255,255,.075); border-radius:13px; background:linear-gradient(160deg,#181a21,#101116); transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease; }
+.movie-card:hover { transform:translateY(-6px); border-color:rgba(212,175,55,.52); box-shadow:0 20px 42px rgba(0,0,0,.42); }
+.movie-poster-wrap { background:linear-gradient(145deg,#29251b,#111319); }
+.movie-poster { transition:transform .45s cubic-bezier(.2,.7,.2,1); }
+.movie-card:hover .movie-poster { transform:scale(1.045); }
+.movie-rating-badge { border:1px solid rgba(212,175,55,.28); background:rgba(8,9,13,.88); backdrop-filter:blur(8px); }
+.poster-play { box-shadow:0 8px 25px rgba(212,175,55,.2); }
+.load-more-btn,.submit-btn { min-height:44px; border-radius:10px; font-weight:750; box-shadow:0 10px 25px rgba(212,175,55,.12); }
+.site-footer { border-top:1px solid rgba(212,175,55,.16); }
+.footer-inner { gap:30px; }
+.instagram-promo { border:1px solid rgba(212,175,55,.2); }
+
+/* Movie detail and player overlays */
+.player-overlay,.modal-overlay { padding:clamp(12px,3vw,32px); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+.player-box,.movie-detail-box,.auth-card { border:1px solid rgba(212,175,55,.2); border-radius:18px; box-shadow:var(--vd-shadow); }
+.player-heading { border-bottom:1px solid var(--vd-line); }
+.close-player,.detail-close { transition:color .2s,background .2s,transform .2s; }
+.close-player:hover,.detail-close:hover { color:var(--vd-gold); transform:scale(1.06); }
+#videoContainer .player-toolbar { border-top:1px solid rgba(212,175,55,.16); }
+#videoContainer .player-toolbar select { border:1px solid rgba(212,175,55,.22); border-radius:8px; background:#111319; }
+#videoContainer .player-toolbar .download-link { color:var(--vd-gold); font-weight:700; }
+
+/* Movie player: keep quality, speed and download controls below the video. */
+#videoContainer {
+  display:flex; flex-direction:column; width:100%; height:auto; aspect-ratio:auto; overflow:hidden;
+}
+#videoContainer video,#videoContainer iframe {
+  display:block; flex:0 0 auto; width:100%; height:auto; max-height:calc(100vh - 250px);
+  aspect-ratio:16/9; object-fit:contain;
+}
+#videoContainer .player-toolbar {
+  position:relative!important; inset:auto!important; z-index:3; display:flex; flex:0 0 auto;
+  flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:10px 16px;
+  min-height:52px; padding:12px 14px; background:#101116;
+}
+#videoContainer .player-toolbar label { display:inline-flex; align-items:center; gap:6px; margin:0; }
+#videoContainer .player-toolbar select { max-width:140px; }
+#videoContainer .player-toolbar .download-link { margin-left:auto; white-space:nowrap; }
+#videoContainer .video-loading { inset:0 0 64px; }
+
+/* Profile — align previously blue/purple accents with VIDORA gold */
+.profile-page { background:radial-gradient(ellipse at 12% 5%,rgba(212,175,55,.09),transparent 34rem),radial-gradient(ellipse at 90% 30%,rgba(139,30,45,.1),transparent 30rem),var(--vd-bg); }
+.profile-topbar { padding-inline:max(5vw,calc((100vw - 1280px)/2)); }
+.profile-hero { border-color:rgba(212,175,55,.22); background:linear-gradient(115deg,rgba(35,30,20,.96),rgba(20,19,18,.95) 58%,rgba(39,22,25,.92)); }
+.profile-orb-one { background:rgba(212,175,55,.16); box-shadow:0 0 80px rgba(212,175,55,.14); }
+.profile-orb-two { background:rgba(139,30,45,.17); box-shadow:0 0 65px rgba(139,30,45,.16); }
+.profile-avatar { border-color:rgba(212,175,55,.65); color:#08090d; background:linear-gradient(135deg,#f0d77f,#9b7620); box-shadow:0 0 0 7px rgba(212,175,55,.1),0 0 38px rgba(212,175,55,.22); }
+.profile-edit-trigger,.profile-save-button { color:#08090d; border-color:var(--vd-gold); background:linear-gradient(120deg,#e4c45d,#b99528); box-shadow:0 8px 25px rgba(212,175,55,.15); }
+.profile-stat-card { border-color:var(--vd-line); background:linear-gradient(145deg,rgba(31,29,24,.92),rgba(16,17,21,.96)); }
+.profile-stat-card:hover { border-color:rgba(212,175,55,.38); background:linear-gradient(145deg,rgba(42,36,23,.96),rgba(18,19,23,.96)); }
+.profile-stat-icon { color:var(--vd-gold); background:rgba(212,175,55,.13); }
+.profile-progress { background:#34312a; }
+.profile-progress span { background:linear-gradient(90deg,#9b7620,#e4c45d); }
+.profile-play-button { color:var(--vd-gold); border-color:rgba(212,175,55,.28); background:rgba(212,175,55,.1); }
+.profile-play-button:hover { background:rgba(212,175,55,.2); border-color:rgba(212,175,55,.5); }
+.profile-empty span,.profile-footer a,.profile-security-note span { color:var(--vd-gold); }
+.profile-settings { border-color:var(--vd-line); background:linear-gradient(145deg,rgba(30,29,25,.92),rgba(14,16,20,.96)); }
+.profile-field input:focus { border-color:var(--vd-gold); outline:2px solid rgba(212,175,55,.18); }
+.profile-consent-option input[type="checkbox"] { accent-color:var(--vd-gold); }
+
+/* Public series catalog */
+.series-public-header,.watch-header { min-height:70px; }
+.series-public-main { padding-top:clamp(28px,4vw,52px); }
+.series-public-hero { max-width:820px; margin-bottom:32px; }
+.series-public-hero h1 { font-size:clamp(32px,5vw,54px); line-height:1.08; letter-spacing:-.045em; text-wrap:balance; }
+.series-public-grid { gap:18px; }
+.series-card { border-color:rgba(212,175,55,.16); border-radius:15px; background:linear-gradient(160deg,#181a21,#101116); transition:transform .24s,border-color .24s,box-shadow .24s; }
+.series-card:hover { transform:translateY(-5px); border-color:rgba(212,175,55,.48); box-shadow:0 18px 38px rgba(0,0,0,.35); }
+.series-card-art { min-height:250px; background:radial-gradient(circle at 70% 25%,#55421e,#211b14 48%,#0c0d12); }
+.series-detail-meta,.series-season { border-color:rgba(212,175,55,.18); border-radius:15px; }
+.series-season { background:linear-gradient(145deg,#17191f,#101116); }
+
+/* Series player */
+.watch-layout { padding-top:clamp(24px,4vw,42px); gap:26px; }
+.watch-main h1 { line-height:1.12; letter-spacing:-.035em; }
+.video-frame { border-color:rgba(212,175,55,.25); border-radius:16px; box-shadow:0 20px 50px rgba(0,0,0,.32); }
+.player-controls select { min-height:42px; }
+.player-controls button { min-height:42px; border-radius:9px; transition:background .2s,transform .2s; }
+.player-controls button:hover:not(:disabled) { background:#e4c45d; transform:translateY(-1px); }
+.watch-sidebar { border-color:rgba(212,175,55,.18); border-radius:16px; background:linear-gradient(145deg,#17191f,#101116); }
+.episode-nav-button { transition:border-color .2s,background .2s; }
+.episode-nav-button:hover:not(:disabled) { border-color:rgba(212,175,55,.45); }
+
+/* Admin workspaces */
+.admin-layout { min-height:100vh; background:radial-gradient(ellipse at 85% 0,rgba(212,175,55,.055),transparent 34rem),var(--vd-bg); }
+.admin-sidebar { background:#0d0f14; border-right:1px solid rgba(212,175,55,.16); }
+.admin-sidebar .logo { margin-bottom:28px; }
+.admin-nav a { border-radius:9px; transition:background .18s,color .18s; }
+.admin-nav a:hover,.admin-nav a.active { color:var(--vd-gold); background:rgba(212,175,55,.09); }
+.admin-main { min-width:0; }
+.admin-header { border-bottom:1px solid var(--vd-line); }
+.admin-header h1 { letter-spacing:-.04em; }
+.stat-card,.admin-panel,.admin-table,.ad-form { border-color:var(--vd-line); border-radius:14px; background:linear-gradient(150deg,rgba(24,26,32,.96),rgba(15,17,22,.98)); }
+.stat-card { transition:transform .2s,border-color .2s; }
+.stat-card:hover { transform:translateY(-2px); border-color:rgba(212,175,55,.3); }
+.stat-card .value { color:var(--vd-gold); }
+.admin-table th { color:var(--vd-gold); }
+.admin-table td,.admin-table th { border-color:var(--vd-line); }
+.admin-table-tools input,.admin-panel input,.admin-panel select,.admin-panel textarea,.ad-form input,.ad-form select,.ad-form textarea { border-color:#343640; border-radius:9px; background:#0c0e13; }
+.admin-table-tools input:focus,.admin-panel input:focus,.admin-panel select:focus,.admin-panel textarea:focus,.ad-form input:focus,.ad-form select:focus,.ad-form textarea:focus { border-color:var(--vd-gold); outline:2px solid rgba(212,175,55,.13); }
+.tab-link.active,.submit-btn,.load-more-btn { border-radius:9px; }
+.admin-btn,.admin-role-badge { color:var(--vd-gold); }
+
+/* Series content admin */
+.series-admin-page { background:radial-gradient(ellipse at 80% 0,rgba(212,175,55,.07),transparent 34rem),var(--vd-bg); }
+.series-admin-header { min-height:72px; }
+.series-admin-panel { border-color:rgba(212,175,55,.18); border-radius:16px; background:linear-gradient(150deg,#181a20,#101116); box-shadow:0 14px 35px rgba(0,0,0,.16); }
+.series-admin-panel input,.series-admin-panel textarea,.series-admin-panel select { min-height:42px; border-color:#363740; border-radius:9px; }
+.series-item,.hierarchy-item,.episode-upload-box { border-color:var(--vd-line); border-radius:11px; }
+.series-item.selected { background:rgba(212,175,55,.08); }
+.gold-button { min-height:42px; border-radius:9px; transition:transform .18s,filter .18s; }
+.gold-button:hover { transform:translateY(-1px); filter:brightness(1.08); }
+.quiet-button,.item-actions button { min-height:34px; }
+
+/* Narrow screens and reduced motion */
+@media(max-width:900px) {
+  .hero.netflix-hero { min-height:440px; }
+  .hero-poster-wrap { display:none; }
+  .admin-layout { display:block; }
+}
+@media(max-width:620px) {
+  .nav-container { gap:12px; }
+  .hero.netflix-hero { min-height:400px; }
+  .homepage-filters { padding:13px; }
+  .section-heading { align-items:flex-start; }
+  .series-public-header,.watch-header { padding-inline:14px; }
+  .series-public-main { width:calc(100% - 24px); }
+  .profile-page .profile-shell { width:92vw; }
+  .profile-edit-trigger { margin-left:0; }
+  .admin-header { gap:12px; flex-wrap:wrap; }
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after { scroll-behavior:auto!important; animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; }
+}

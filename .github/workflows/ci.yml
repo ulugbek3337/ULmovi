@@ -36,11 +36,28 @@ jobs:
       - name: Test profile watch progress
         run: php tests/profile_progress_smoke.php
 
+      - name: Test VIDORA public series API
+        run: php tests/series_api_smoke.php
+
       - name: Check JavaScript syntax
         run: |
           for file in public/js/*.js; do
             node --check "$file"
           done
+
+      - name: Test VIDORA brand consistency
+        run: node tests/vidora-brand-smoke.cjs
+      - name: Test VIDORA premium UI consistency
+        run: node tests/vidora-premium-ui-smoke.cjs
+
+      - name: Test VIDORA series admin UI
+        run: node tests/vidora-series-admin-smoke.cjs
+
+      - name: Test VIDORA episode upload and playback
+        run: node tests/vidora-playback-smoke.cjs
+
+      - name: Validate VIDORA test deployment script
+        run: bash -n scripts/update-vidora-test.sh
 
       - name: Validate Composer manifest
         run: php -r '$data=json_decode(file_get_contents("composer.json"), true, 512, JSON_THROW_ON_ERROR); if (!isset($data["require"]["phpmailer/phpmailer"])) { exit(1); }'

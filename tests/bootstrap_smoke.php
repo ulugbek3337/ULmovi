@@ -13,9 +13,20 @@ require_once dirname(__DIR__) . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPA
 try {
     $pdo = database();
     $version = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($version !== 9) {
-        throw new RuntimeException('Expected schema version 9, got ' . $version);
+    if ($version !== 11) {
+        throw new RuntimeException('Expected schema version 11, got ' . $version);
     }
+    $uploadColumns = array_column($pdo->query('PRAGMA table_info(upload_sessions)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    foreach (['target_type', 'target_id', 'target_quality'] as $column) {
+        if (!in_array($column, $uploadColumns, true)) {
+            throw new RuntimeException('VIDORA upload target column was not created: ' . $column);
+        }
+    }
+    $targetDefault = $pdo->query("SELECT dflt_value FROM pragma_table_info('upload_sessions') WHERE name = 'target_type'")->fetchColumn();
+    if (trim((string)$targetDefault, "'") !== 'movie') {
+        throw new RuntimeException('Existing movie upload sessions must default to the movie target.');
+    }
+
     $movieFileColumns = array_column($pdo->query('PRAGMA table_info(movie_files)')->fetchAll(PDO::FETCH_ASSOC), 'name');
     foreach (['source_type', 'drive_file_id'] as $column) {
         if (!in_array($column, $movieFileColumns, true)) {
@@ -59,8 +70,8 @@ try {
     $pdo->exec('PRAGMA user_version = 7');
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($upgradedVersion !== 9) {
-        throw new RuntimeException('Existing v7 database did not upgrade to v9.');
+    if ($upgradedVersion !== 11) {
+        throw new RuntimeException('Existing v7 database did not upgrade to v11.');
     }
     $watchTable = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'watch_progress'")->fetchColumn();
     if ($watchTable !== 'watch_progress') {
@@ -80,8 +91,8 @@ try {
     $pdo->exec('PRAGMA user_version = 6');
     migrate_database($pdo);
     $upgradedVersion = (int)$pdo->query('PRAGMA user_version')->fetchColumn();
-    if ($upgradedVersion !== 9) {
-        throw new RuntimeException('Existing v6 database did not upgrade to v9.');
+    if ($upgradedVersion !== 11) {
+        throw new RuntimeException('Existing v6 database did not upgrade to v11.');
     }
     $savedPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
     if ((float)$savedPosition !== 123.5) {
@@ -94,14 +105,110 @@ try {
         }
     }
 
-    // A v9 database remains stable on repeated migration.
+    // Upgrade an existing v9 movie database in place; preserve its data.
+    foreach (['episode_watch_progress', 'episode_files', 'episodes', 'seasons', 'series'] as $tableName) {
+        $pdo->exec('DROP TABLE ' . $tableName);
+    }
+    $pdo->exec('PRAGMA user_version = 9');
     migrate_database($pdo);
-    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 9) {
-        throw new RuntimeException('Repeated migration changed the v9 schema version.');
+    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 11) {
+        throw new RuntimeException('Existing v9 database did not upgrade to v11.');
+    }
+    $preservedMovie = $pdo->query("SELECT title FROM movies WHERE id = " . $movieId)->fetchColumn();
+    if ($preservedMovie !== 'Migration Movie') {
+        throw new RuntimeException('Existing movie data was not preserved during v9 to v11 migration.');
+    }
+    $preservedWatchPosition = $pdo->query('SELECT position_seconds FROM watch_progress WHERE user_id = ' . $userId . ' AND movie_id = ' . $movieId)->fetchColumn();
+    if ((float)$preservedWatchPosition !== 123.5) {
+        throw new RuntimeException('Existing movie watch history was not preserved during v9 to v11 migration.');
+    }
+
+    // A v11 database remains stable on repeated migration.
+    migrate_database($pdo);
+    if ((int)$pdo->query('PRAGMA user_version')->fetchColumn() !== 11) {
+        throw new RuntimeException('Repeated migration changed the v10 schema version.');
+    }
+
+    // Upgrade a genuine v10 upload_sessions layout with no episode target columns.
+    $legacyPdo = new PDO('sqlite::memory:');
+    $legacyPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $legacyPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $legacyPdo->exec('PRAGMA foreign_keys = ON');
+    $legacyPdo->exec(
+        'CREATE TABLE upload_sessions (
+            upload_id TEXT PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            title TEXT NOT NULL, genre TEXT NOT NULL, year INTEGER NOT NULL,
+            description TEXT NOT NULL DEFAULT "",
+            total_size INTEGER NOT NULL CHECK(total_size BETWEEN 1 AND 6442450944),
+            chunk_size INTEGER NOT NULL CHECK(chunk_size BETWEEN 1048576 AND 16777216),
+            chunk_count INTEGER NOT NULL CHECK(chunk_count > 0),
+            status TEXT NOT NULL DEFAULT "uploading" CHECK(status IN ("uploading", "assembling", "completed", "failed", "cancelled")),
+            created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, expires_at INTEGER NOT NULL
+        )'
+    );
+    $legacyPdo->exec('PRAGMA user_version = 10');
+    migrate_database($legacyPdo);
+    $legacyColumns = array_column($legacyPdo->query('PRAGMA table_info(upload_sessions)')->fetchAll(PDO::FETCH_ASSOC), 'name');
+    foreach (['target_type', 'target_id', 'target_quality'] as $column) {
+        if (!in_array($column, $legacyColumns, true)) {
+            throw new RuntimeException('v10 to v11 migration did not add upload target column: ' . $column);
+        }
+    }
+    $legacyDefault = $legacyPdo->query("SELECT dflt_value FROM pragma_table_info('upload_sessions') WHERE name = 'target_type'")->fetchColumn();
+    if (trim((string)$legacyDefault, "'") !== 'movie') {
+        throw new RuntimeException('v10 upload sessions must preserve movie upload behavior by default.');
+    }
+
+    // VIDORA series schema: relationships, uniqueness, and cascading deletes.
+    foreach (['series', 'seasons', 'episodes', 'episode_files', 'episode_watch_progress'] as $tableName) {
+        $exists = $pdo->query("SELECT name FROM sqlite_master WHERE type = 'table' AND name = " . $pdo->quote($tableName))->fetchColumn();
+        if ($exists !== $tableName) {
+            throw new RuntimeException('Missing VIDORA series table: ' . $tableName);
+        }
+    }
+    $pdo->exec("INSERT INTO series(title, status) VALUES ('VIDORA Test Series', 'published')");
+    $seriesId = (int)$pdo->lastInsertId();
+    $pdo->prepare('INSERT INTO seasons(series_id, season_number, title) VALUES (?, ?, ?)')
+        ->execute([$seriesId, 1, 'Season 1']);
+    $seasonId = (int)$pdo->lastInsertId();
+    $pdo->prepare("INSERT INTO episodes(season_id, episode_number, title, status, duration_seconds) VALUES (?, ?, ?, 'published', ?)")
+        ->execute([$seasonId, 1, 'Episode 1', 1800]);
+    $episodeId = (int)$pdo->lastInsertId();
+    $pdo->prepare('INSERT INTO episode_files(episode_id, quality, file_path, mime_type, file_size) VALUES (?, ?, ?, ?, ?)')
+        ->execute([$episodeId, '1080p', 'episodes/test.mp4', 'video/mp4', 1024]);
+    $pdo->prepare('INSERT INTO episode_watch_progress(user_id, episode_id, position_seconds, duration_seconds) VALUES (?, ?, ?, ?)')
+        ->execute([$userId, $episodeId, 120.5, 1800.0]);
+
+    $duplicateRejected = false;
+    try {
+        $pdo->prepare('INSERT INTO seasons(series_id, season_number) VALUES (?, ?)')->execute([$seriesId, 1]);
+    } catch (PDOException $exception) {
+        $duplicateRejected = true;
+    }
+    if (!$duplicateRejected) {
+        throw new RuntimeException('Duplicate season numbers were not rejected.');
+    }
+
+    $progress = $pdo->prepare('SELECT position_seconds FROM episode_watch_progress WHERE user_id = ? AND episode_id = ?');
+    $progress->execute([$userId, $episodeId]);
+    if ((float)$progress->fetchColumn() !== 120.5) {
+        throw new RuntimeException('Episode watch progress was not saved.');
+    }
+
+    $pdo->prepare('DELETE FROM series WHERE id = ?')->execute([$seriesId]);
+    foreach (['seasons', 'episodes', 'episode_files', 'episode_watch_progress'] as $tableName) {
+        $count = (int)$pdo->query('SELECT COUNT(*) FROM ' . $tableName)->fetchColumn();
+        if ($count !== 0) {
+            throw new RuntimeException('Series deletion did not cascade to ' . $tableName . '.');
+        }
+    }
+    if ($pdo->query('PRAGMA foreign_key_check')->fetchAll(PDO::FETCH_ASSOC) !== []) {
+        throw new RuntimeException('VIDORA series migration created foreign-key violations.');
     }
 
     // A database created by a newer application must be rejected.
-    $pdo->exec('PRAGMA user_version = 10');
+    $pdo->exec('PRAGMA user_version = 12');
     try {
         migrate_database($pdo);
         throw new RuntimeException('A newer database schema version was unexpectedly accepted.');

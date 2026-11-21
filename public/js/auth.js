@@ -35,7 +35,7 @@ function setAuthMode(mode) {
     const isRegister = mode === 'register';
     loginForm.hidden = isRegister;
     registerForm.hidden = !isRegister;
-    document.getElementById('authModalTitle').textContent = isRegister ? 'ULmovi hisobini yarating' : 'Hisobingizga kiring';
+    document.getElementById('authModalTitle').textContent = isRegister ? 'VIDORA hisobini yarating' : 'Hisobingizga kiring';
     document.querySelectorAll('.auth-tabs [data-auth-tab]').forEach((tab) => {
         tab.classList.toggle('active', tab.dataset.authTab === mode);
     });

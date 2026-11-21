@@ -1,0 +1,7 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:\.git|\.github|docs|tests|scripts)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:README\.md|composer\.(?:json|lock))$ - [F,L,NC]
+</IfModule>

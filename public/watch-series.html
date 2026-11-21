@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#08090D">
+    <title>VIDORA — Serial tomosha qilish</title>
+    <link rel="stylesheet" href="css/vidora-brand.css">
+    <link rel="stylesheet" href="css/vidora-watch.css">
+    <link rel="stylesheet" href="css/vidora-premium.css">
+</head>
+<body class="vidora-watch-page">
+    <header class="watch-header">
+        <a class="watch-brand" href="index.html"><span>V</span> VIDORA</a>
+        <a href="index.html">Bosh sahifa</a>
+    </header>
+    <main class="watch-layout">
+        <section class="watch-main">
+            <p class="watch-eyebrow">VIDORA SERIES</p>
+            <h1 id="seriesTitle">Serial yuklanmoqda…</h1>
+            <p id="episodeTitle" class="episode-heading">Qism tanlanmoqda</p>
+            <div class="video-frame">
+                <video id="episodePlayer" controls playsinline preload="metadata"></video>
+                <div id="playerMessage" class="player-message" role="status" aria-live="polite">Video tayyorlanmoqda…</div>
+            </div>
+            <div class="player-controls">
+                <label for="qualitySelect">Video sifati</label>
+                <select id="qualitySelect"><option value="">Avtomatik</option></select>
+                <button id="nextEpisode" type="button" disabled>Keyingi qism <span aria-hidden="true">→</span></button>
+            </div>
+            <p id="watchDescription" class="watch-description"></p>
+            <p id="watchStatus" class="watch-status" role="status" aria-live="polite"></p>
+            <p class="watch-hint">Tomosha qilish uchun ro‘yxatdan o‘tish shart emas. Kirgan foydalanuvchilarning ko‘rish joyi avtomatik saqlanadi.</p>
+        </section>
+        <aside class="watch-sidebar">
+            <h2>Qismlar</h2>
+            <div id="episodeNavigation" class="episode-navigation"><p>Qismlar yuklanmoqda…</p></div>
+        </aside>
+    </main>
+    <script src="js/api.js"></script>
+    <script src="js/vidora-watch.js"></script>
+</body>
+</html>
