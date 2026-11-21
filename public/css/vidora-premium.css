@@ -74,6 +74,24 @@ a { text-underline-offset:3px; }
 #videoContainer .player-toolbar select { border:1px solid rgba(212,175,55,.22); border-radius:8px; background:#111319; }
 #videoContainer .player-toolbar .download-link { color:var(--vd-gold); font-weight:700; }
 
+/* Movie player: keep quality, speed and download controls below the video. */
+#videoContainer {
+  display:flex; flex-direction:column; width:100%; height:auto; aspect-ratio:auto; overflow:hidden;
+}
+#videoContainer video,#videoContainer iframe {
+  display:block; flex:0 0 auto; width:100%; height:auto; max-height:calc(100vh - 250px);
+  aspect-ratio:16/9; object-fit:contain;
+}
+#videoContainer .player-toolbar {
+  position:relative!important; inset:auto!important; z-index:3; display:flex; flex:0 0 auto;
+  flex-wrap:wrap; align-items:center; justify-content:flex-start; gap:10px 16px;
+  min-height:52px; padding:12px 14px; background:#101116;
+}
+#videoContainer .player-toolbar label { display:inline-flex; align-items:center; gap:6px; margin:0; }
+#videoContainer .player-toolbar select { max-width:140px; }
+#videoContainer .player-toolbar .download-link { margin-left:auto; white-space:nowrap; }
+#videoContainer .video-loading { inset:0 0 64px; }
+
 /* Profile — align previously blue/purple accents with VIDORA gold */
 .profile-page { background:radial-gradient(ellipse at 12% 5%,rgba(212,175,55,.09),transparent 34rem),radial-gradient(ellipse at 90% 30%,rgba(139,30,45,.1),transparent 30rem),var(--vd-bg); }
 .profile-topbar { padding-inline:max(5vw,calc((100vw - 1280px)/2)); }
